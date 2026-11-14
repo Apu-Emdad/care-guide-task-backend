@@ -1,152 +1,76 @@
 # Database Schema
 
-PostgreSQL, managed with Prisma. `prisma/schema.prisma` implements this design.
+MongoDB (Atlas), with Mongoose. The schemas are in `src/infra/mongo/schemas/`. Every index is defined with `schema.index`, in the same file as its schema.
 
-## Conventions
-
-- Table and column names are `snake_case`; tables are plural. Prisma models are `PascalCase` singular and map to them with `@@map` / `@map`.
-- Every table has two ids: `id bigserial` (auto-increment primary key from Prisma's `autoincrement()`, used by foreign keys and joins) and `uid text default generate_uid()` (a unique 10-character random id from `0-9a-zA-Z`, the only id exposed by the API). `generate_uid()` is a Postgres function created in the `init` migration.
-- Timestamps are `timestamp(3)` (no time zone). Prisma always stores them in UTC.
-- Fixed value sets are Postgres enums, named in `PascalCase` like their Prisma enums (no `@@map` on enums). Values that grow over time are `text`.
-- No soft deletes.
-
-## ER diagram
+## Collections
 
 ```mermaid
 erDiagram
-    roles ||--o{ users : "assigned to"
-    users ||--o{ email_tokens : "has"
-    users ||--o| employees : "has profile"
-    teams ||--o{ employees : "has members"
-
-    roles {
-        bigint id PK
-        text uid UK
-        text name UK
-    }
-    users {
-        bigint id PK
-        text uid UK
-        text user_name UK
-        text email UK
-        text password_hash
-        bigint role_id FK
-        timestamp email_verified_at
-    }
-    email_tokens {
-        bigint id PK
-        text uid UK
-        bigint user_id FK
-        EmailTokenType type
-        text token_hash UK
-    }
-    teams {
-        bigint id PK
-        text uid UK
-        text name UK
-        Department department
-    }
-    employees {
-        bigint id PK
-        text uid UK
-        bigint user_id FK
-        bigint team_id FK
-        text full_name
-        int salary
-        EmploymentType employment_type
-    }
+    users ||--o{ notes : "owner"
+    users ||--o{ posts : "author"
+    users ||--o{ refresh_tokens : "userId"
 ```
-
-## Tables
-
-### `roles`
-
-One row per role. Created by the seed (`yarn db:seed`) with `USER` and `SUPER_ADMIN`; code refers to them through the `ROLE` constant (`src/common/constants/roles.ts`).
-
-| Column             | Type           | Null | Notes                                            |
-| ------------------ | -------------- | ---- | ------------------------------------------------ |
-| `id`               | `bigint`       | no   | PK, auto-increment (`bigserial`)                 |
-| `uid`              | `text`         | no   | Unique, default `generate_uid()` (10 characters) |
-| `name`             | `text`         | no   | Unique, e.g. `USER`, `SUPER_ADMIN`               |
-| `role_permissions` | `jsonb`        | yes  | Not used yet; always empty                       |
-| `created_at`       | `timestamp(3)` | no   | Default `now()`                                  |
-| `updated_at`       | `timestamp(3)` | no   | Updated by Prisma                                |
 
 ### `users`
 
-| Column          | Type           | Null | Notes                                                                |
-| --------------- | -------------- | ---- | -------------------------------------------------------------------- |
-| `id`            | `bigint`       | no   | PK, auto-increment (`bigserial`)                                     |
-| `uid`           | `text`         | no   | Unique, default `generate_uid()` (10 characters)                     |
-| `user_name`     | `text`         | no   | Unique, stored lowercase. 3 to 30 characters: `a-z`, `0-9`, `_`, `-` |
-| `email`         | `text`         | no   | Unique, stored lowercase                                             |
-| `password_hash` | `text`         | no   | Argon2 hash                                                          |
-| `role_id`       | `bigint`       | no   | FK → `roles.id`, on delete restrict. New users get the `USER` role   |
-| `is_active`     | `boolean`      | no   | Default `true`                                                       |
-| `email_verified_at` | `timestamp(3)` | yes | When the email was verified. `null` until then, and again after the email changes. The seeded super admin starts verified |
-| `created_at`    | `timestamp(3)` | no   | Default `now()`                                                      |
-| `updated_at`    | `timestamp(3)` | no   | Updated by Prisma                                                    |
+| Field          | Type       | Notes                                               |
+| -------------- | ---------- | --------------------------------------------------- |
+| `_id`          | `ObjectId` | Primary key                                         |
+| `email`        | `string`   | Required, lower case, unique                        |
+| `passwordHash` | `string`   | Required, argon2 hash. Hidden from queries          |
+| `role`         | `string`   | `USER` (default) or `ADMIN`                         |
+| `interests`    | `string[]` | Default empty. Grouped by the interests aggregation |
+| `createdAt`    | `Date`     | Set by Mongoose                                     |
+| `updatedAt`    | `Date`     | Set by Mongoose                                     |
 
-### `email_tokens`
+### `refresh_tokens`
 
-One-use tokens sent in email links. The link carries 32 random bytes as hex; only their SHA-256 hash is stored.
+One document per session.
 
-| Column       | Type             | Null | Notes                                                                       |
-| ------------ | ---------------- | ---- | --------------------------------------------------------------------------- |
-| `id`         | `bigint`         | no   | PK, auto-increment (`bigserial`)                                            |
-| `uid`        | `text`           | no   | Unique, default `generate_uid()` (10 characters). Never sent anywhere       |
-| `user_id`    | `bigint`         | no   | FK → `users.id`, on delete cascade. Indexed with `type`                     |
-| `type`       | `EmailTokenType` | no   | `VERIFY_EMAIL` or `RESET_PASSWORD`                                          |
-| `token_hash` | `text`           | no   | Unique. SHA-256 of the token, as hex                                        |
-| `expires_at` | `timestamp(3)`   | no   | 24 hours after creation for `VERIFY_EMAIL`, 30 minutes for `RESET_PASSWORD` |
-| `used_at`    | `timestamp(3)`   | yes  | Set when the link is used; a used token never works again                   |
-| `created_at` | `timestamp(3)`   | no   | Default `now()`                                                             |
+| Field       | Type       | Notes                                                  |
+| ----------- | ---------- | ------------------------------------------------------ |
+| `_id`       | `string`   | The session id. It goes inside the refresh token       |
+| `userId`    | `ObjectId` | Required, the user the session belongs to              |
+| `tokenHash` | `string`   | Required, SHA-256 hash of the token. Never the token   |
+| `expiresAt` | `Date`     | Required. MongoDB deletes the document after this time |
+| `createdAt` | `Date`     | Set by Mongoose                                        |
 
-### `teams`
+### `notes`
 
-Example data for the employees feature, created by the seed. The team dropdown on the employee form reads them through `GET /teams`.
+| Field       | Type       | Notes               |
+| ----------- | ---------- | ------------------- |
+| `_id`       | `ObjectId` | Primary key         |
+| `owner`     | `ObjectId` | Required, the user  |
+| `title`     | `string`   | Required, max 200   |
+| `content`   | `string`   | Required, max 10000 |
+| `createdAt` | `Date`     | Set by Mongoose     |
+| `updatedAt` | `Date`     | Set by Mongoose     |
 
-| Column       | Type           | Null | Notes                                            |
-| ------------ | -------------- | ---- | ------------------------------------------------ |
-| `id`         | `bigint`       | no   | PK, auto-increment (`bigserial`)                 |
-| `uid`        | `text`         | no   | Unique, default `generate_uid()` (10 characters) |
-| `name`       | `text`         | no   | Unique                                           |
-| `department` | `Department`   | no   | `ENGINEERING`, `DESIGN` or `SALES`. Indexed      |
-| `created_at` | `timestamp(3)` | no   | Default `now()`                                  |
-| `updated_at` | `timestamp(3)` | no   | Updated by Prisma                                |
+### `posts`
 
-### `employees`
+| Field       | Type       | Notes               |
+| ----------- | ---------- | ------------------- |
+| `_id`       | `ObjectId` | Primary key         |
+| `author`    | `ObjectId` | Required, the user  |
+| `title`     | `string`   | Required, max 200   |
+| `content`   | `string`   | Required, max 10000 |
+| `createdAt` | `Date`     | Set by Mongoose     |
+| `updatedAt` | `Date`     | Set by Mongoose     |
 
-An employee is a profile on a user account: creating an employee also creates the login.
+## Indexes
 
-| Column            | Type             | Null | Notes                                                           |
-| ----------------- | ---------------- | ---- | --------------------------------------------------------------- |
-| `id`              | `bigint`         | no   | PK, auto-increment (`bigserial`)                                |
-| `uid`             | `text`           | no   | Unique, default `generate_uid()` (10 characters)                |
-| `user_id`         | `bigint`         | no   | Unique, FK → `users.id`, on delete cascade                      |
-| `team_id`         | `bigint`         | no   | FK → `teams.id`, on delete restrict. Indexed                    |
-| `full_name`       | `text`           | no   | 3 to 60 characters                                              |
-| `bio`             | `text`           | yes  | Up to 300 characters                                            |
-| `salary`          | `integer`        | no   | Whole number, per month                                         |
-| `skills`          | `text[]`         | no   | Up to 10 items                                                  |
-| `employment_type` | `EmploymentType` | no   | `FULL_TIME`, `PART_TIME` or `CONTRACT`                          |
-| `join_date`       | `date`           | no   | Not in the future                                               |
-| `is_remote`       | `boolean`        | no   | Default `false`                                                 |
-| `created_at`      | `timestamp(3)`   | no   | Default `now()`                                                 |
-| `updated_at`      | `timestamp(3)`   | no   | Updated by Prisma                                               |
+Only indexes that a query needs exist. Besides these, every collection has the default `_id` index.
 
-## Design decisions
+| Collection       | Index                       | Used by                                                                                      |
+| ---------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
+| `users`          | `{ email: 1 }`, unique      | Login by email and the duplicate email check on register and update                          |
+| `refresh_tokens` | `{ expiresAt: 1 }`, TTL 0 s | Removes expired sessions                                                                     |
+| `refresh_tokens` | `{ userId: 1 }`             | Ends all sessions of a user                                                                  |
+| `notes`          | `{ owner: 1, _id: -1 }`     | A user's notes, newest first, and the owner check on one note                                |
+| `posts`          | `{ author: 1, _id: -1 }`    | The posts of one author, newest first, and the `$lookup` from users in the posts aggregation |
 
-- **Two ids per row.** The integer `id` keeps primary keys, foreign keys and indexes small and fast. The random `uid` is what the API exposes, so URLs like `/users/:uid` can't be guessed or counted. The integer `id` never leaves the backend.
-- **Roles live in their own table.** Each user has exactly one role through `users.role_id`; many users share a role. New roles are added as rows, without a schema change. A role in use can't be deleted (`on delete restrict`). Permissions are not modelled yet.
+### Queries that need no extra index
 
-- **Email tokens are stored hashed.** Someone who reads the database still can't use a link, the same way passwords are stored as hashes. SHA-256 is enough here (no Argon2) because the token is 32 random bytes, so it can't be guessed. Creating a token deletes the user's older unused ones of that type, so only the newest link works. Used and expired rows stay until the next token of that type replaces them.
-
-- **Employees are profiles on users.** The login (user name, email, password hash) stays in `users`, so there is one place for credentials and no email stored twice. Deleting the user removes the profile (`on delete cascade`), and the API deletes an employee by deleting their user.
-- **The department comes from the team.** `teams.department` is the only place it is stored, so an employee can't have a department that disagrees with their team. The API takes a `teamUid`, and the department filter reads through the team.
-
-## Adding a table
-
-1. Add the model to `prisma/schema.prisma`, following the conventions above (`id`, `uid` with `@default(dbgenerated("generate_uid()"))`, `@@map` to a plural `snake_case` table).
-2. Create the migration with `yarn migrate:dev --create-only --name <name>`, review the SQL, then apply it with `yarn migrate:dev`.
-3. Document the table here.
+- **Get by id** (a user, a note, a post, a session): the default `_id` index.
+- **Admin: list all users** and **list all notes**, **list all posts**: sorted by `_id`, which is the default index. Pagination uses `_id` as the cursor.
+- **Users grouped by interests**: one aggregation over the whole `users` collection (`$unwind` and `$group`). It reads every user, so an index would not help. This is checked again with `explain()` in the index review.
