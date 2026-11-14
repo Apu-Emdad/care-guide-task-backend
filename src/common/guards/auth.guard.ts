@@ -1,30 +1,32 @@
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
 import type { Request } from 'express';
-import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator.js';
-import { PrismaService } from '../../infra/prisma/prisma.service.js';
-import type { JwtPayload } from './auth.types.js';
+import { Model } from 'mongoose';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
+import { User } from '../../infra/mongo/schemas/user.schema.js';
+import type { JwtPayload } from '../../infra/token/token.types.js';
 
 /**
  * Global guard: every route needs a valid token unless it is marked @Public().
  * On public routes a valid token still sets request.user, and a missing or bad one
  * is ignored (no 401), so an expired token can't block /auth/refresh.
- * The user must still exist and be active, so a disabled account is locked out
- * right away instead of when its access token expires.
+ * The user must still exist, so a deleted account is locked out right away instead of
+ * when its access token expires. The role is read from the database, so a role change
+ * also applies right away.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    @InjectModel(User.name) private readonly users: Model<User>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -48,21 +50,13 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired access token');
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { uid: payload.sub },
-      select: { isActive: true },
-    });
-    if (!user || !user.isActive) {
+    const user = await this.users.findById(payload.sub).select('role').lean();
+    if (!user) {
       if (isPublic) return true;
-      if (!user) throw new UnauthorizedException('User no longer exists');
-      throw new ForbiddenException('Account is disabled');
+      throw new UnauthorizedException('User no longer exists');
     }
 
-    request.user = {
-      uid: payload.sub,
-      userName: payload.userName,
-      role: payload.role,
-    };
+    request.user = { uid: payload.sub, role: user.role };
     return true;
   }
 

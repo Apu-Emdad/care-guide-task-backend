@@ -9,10 +9,12 @@ import {
   MinLength,
 } from 'class-validator';
 
+const trimmed = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim() : value;
+
 const toLowerTrimmed = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
 
-// Same rules as RegisterDto.
 export class UpdateProfileDto {
   @ApiProperty({
     example: 'maya_rodriguez',
@@ -26,6 +28,13 @@ export class UpdateProfileDto {
       'Username must be 3 to 30 characters and use only letters, numbers, _ or -',
   })
   userName: string;
+
+  @ApiProperty({ example: 'Maya Rodriguez' })
+  @Transform(trimmed)
+  @IsString({ message: 'Full name must be a string' })
+  @IsNotEmpty({ message: 'Full name is required' })
+  @MaxLength(100, { message: 'Full name must be at most 100 characters' })
+  fullName: string;
 
   @ApiProperty({ example: 'maya.rodriguez@example.com' })
   @Transform(toLowerTrimmed)

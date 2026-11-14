@@ -11,6 +11,10 @@ export class Post {
 
   @Prop({ required: true, maxlength: 10000 })
   content: string;
+
+  createdAt: Date;
+
+  updatedAt: Date;
 }
 
 export type PostDocument = HydratedDocument<Post>;

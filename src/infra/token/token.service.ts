@@ -5,8 +5,9 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import type { Env } from '../../config/env.js';
-import { RefreshToken } from '../../infra/mongo/schemas/refresh-token.schema.js';
-import type { JwtPayload, RefreshPayload } from './auth.types.js';
+import { RefreshToken } from '../mongo/schemas/refresh-token.schema.js';
+import type { UserDocument } from '../mongo/schemas/user.schema.js';
+import type { JwtPayload, RefreshPayload } from './token.types.js';
 
 export interface TokenPair {
   accessToken: string;
@@ -37,7 +38,23 @@ export class TokenService {
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  async issue(payload: JwtPayload): Promise<TokenPair> {
+  // `tokens` goes in the response data; the refresh token only goes in the cookie.
+  async issueTokens(user: UserDocument) {
+    const payload: JwtPayload = { sub: user.id, role: user.role };
+    const issued = await this.issue(payload);
+
+    return {
+      refreshToken: issued.refreshToken,
+      refreshExpiresIn: issued.refreshExpiresIn,
+      tokens: {
+        accessToken: issued.accessToken,
+        tokenType: 'Bearer',
+        expiresIn: issued.accessExpiresIn,
+      },
+    };
+  }
+
+  private async issue(payload: JwtPayload): Promise<TokenPair> {
     const accessExpiresIn = this.config.get('JWT_ACCESS_EXPIRES_IN', {
       infer: true,
     });

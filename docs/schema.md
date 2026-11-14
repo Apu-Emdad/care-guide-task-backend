@@ -6,7 +6,7 @@ MongoDB (Atlas), with Mongoose. The schemas are in `src/infra/mongo/schemas/`. E
 
 ```mermaid
 erDiagram
-    users ||--o{ notes : "owner"
+    users ||--o{ notes : "author"
     users ||--o{ posts : "author"
     users ||--o{ refresh_tokens : "userId"
 ```
@@ -16,6 +16,8 @@ erDiagram
 | Field          | Type       | Notes                                               |
 | -------------- | ---------- | --------------------------------------------------- |
 | `_id`          | `ObjectId` | Primary key                                         |
+| `userName`     | `string`   | Required, lower case, unique                        |
+| `fullName`     | `string`   | Required                                            |
 | `email`        | `string`   | Required, lower case, unique                        |
 | `passwordHash` | `string`   | Required, argon2 hash. Hidden from queries          |
 | `role`         | `string`   | `USER` (default) or `ADMIN`                         |
@@ -40,7 +42,7 @@ One document per session.
 | Field       | Type       | Notes               |
 | ----------- | ---------- | ------------------- |
 | `_id`       | `ObjectId` | Primary key         |
-| `owner`     | `ObjectId` | Required, the user  |
+| `author`    | `ObjectId` | Required, the user  |
 | `title`     | `string`   | Required, max 200   |
 | `content`   | `string`   | Required, max 10000 |
 | `createdAt` | `Date`     | Set by Mongoose     |
@@ -64,8 +66,9 @@ Only indexes that a query needs exist. Besides these, every collection has the d
 | Collection       | Index                       | Used by                                                                                      |
 | ---------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
 | `users`          | `{ email: 1 }`, unique      | Login by email and the duplicate email check on register and update                          |
+| `users`          | `{ userName: 1 }`, unique   | Login by user name and the duplicate user name check on register and update                  |
 | `refresh_tokens` | `{ expiresAt: 1 }`, TTL 0 s | Removes expired sessions                                                                     |
-| `notes`          | `{ owner: 1, _id: -1 }`     | A user's notes, newest first, and the owner check on one note                                |
+| `notes`          | `{ author: 1, _id: -1 }`    | A user's notes, newest first, and the author check on one note                               |
 | `posts`          | `{ author: 1, _id: -1 }`    | The posts of one author, newest first, and the `$lookup` from users in the posts aggregation |
 
 ### Queries that need no extra index
