@@ -7,6 +7,7 @@ import {
   IsPositive,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -20,6 +21,13 @@ export class Env {
   @IsInt()
   @IsPositive()
   PORT: number = 5000;
+
+  // MongoDB Atlas connection string, with the database name at the end
+  @Matches(/^mongodb(\+srv)?:\/\/\S+$/, {
+    message:
+      'MONGODB_URI must be a mongodb:// or mongodb+srv:// connection string',
+  })
+  MONGODB_URI: string;
 
   @IsUrl({ protocols: ['postgres', 'postgresql'], require_tld: false })
   DATABASE_URL: string;

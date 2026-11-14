@@ -1,6 +1,7 @@
 import { validateEnv } from './env.js';
 
 const validEnv = {
+  MONGODB_URI: 'mongodb+srv://user:pass@cluster.example.mongodb.net/test-db',
   DATABASE_URL: 'postgresql://starter:starter@localhost:5434/starter_db',
   REDIS_HOST: 'localhost',
   REDIS_PORT: '6380',
@@ -17,6 +18,7 @@ describe('validateEnv', () => {
     expect(validateEnv(validEnv)).toEqual({
       NODE_ENV: 'development',
       PORT: 5000,
+      MONGODB_URI: validEnv.MONGODB_URI,
       DATABASE_URL: validEnv.DATABASE_URL,
       REDIS_HOST: 'localhost',
       REDIS_PORT: 6380,
@@ -50,6 +52,12 @@ describe('validateEnv', () => {
     expect(() => validateEnv({})).toThrow(
       /DATABASE_URL[\s\S]*REDIS_HOST[\s\S]*REDIS_PORT/,
     );
+  });
+
+  it('rejects a MONGODB_URI that is not a mongodb connection string', () => {
+    expect(() =>
+      validateEnv({ ...validEnv, MONGODB_URI: 'postgresql://localhost/db' }),
+    ).toThrow(/MONGODB_URI/);
   });
 
   it('rejects a non-postgres DATABASE_URL', () => {
