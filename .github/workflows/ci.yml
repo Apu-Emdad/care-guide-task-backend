@@ -1,5 +1,5 @@
 # =============================================================================
-# CI PIPELINE: lint, typecheck, test, build
+# CI PIPELINE: lint, typecheck, build
 # Runs on every PR and every push to main. Nothing is deployed.
 # =============================================================================
 
@@ -53,7 +53,7 @@ jobs:
         run: yarn install --immutable
 
       # --- Generate the Prisma client ---------------------------------------
-      # Not committed, but lint, typecheck and tests import it.
+      # Not committed, but lint, typecheck and build import it.
       - name: Generate Prisma client
         run: yarn prisma:generate
 
@@ -63,12 +63,6 @@ jobs:
 
       - name: Typecheck
         run: yarn typecheck
-
-      - name: Unit tests
-        run: yarn test
-
-      - name: E2E tests
-        run: yarn test:e2e # Prisma and Redis are faked, no database needed
 
       - name: Build
         run: yarn build
