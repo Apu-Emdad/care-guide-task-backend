@@ -27,10 +27,7 @@ export class UpdateProfileDto {
   })
   userName: string;
 
-  @ApiProperty({
-    example: 'maya.rodriguez@example.com',
-    description: 'A new email has to be verified again.',
-  })
+  @ApiProperty({ example: 'maya.rodriguez@example.com' })
   @Transform(toLowerTrimmed)
   @IsNotEmpty({ message: 'Email is required' })
   @IsEmail({}, { message: 'Email must be a valid email address' })
