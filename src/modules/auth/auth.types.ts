@@ -7,7 +7,7 @@ export interface JwtPayload {
   role: string;
 }
 
-// Claims inside the refresh token. `jti` identifies it in Redis.
+// Claims inside the refresh token. `jti` is the session id in MongoDB.
 export interface RefreshPayload {
   sub: string; // user uid
   jti: string;

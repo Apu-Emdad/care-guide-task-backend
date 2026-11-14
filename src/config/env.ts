@@ -3,13 +3,10 @@ import { plainToInstance } from 'class-transformer';
 import {
   IsIn,
   IsInt,
-  IsNotEmpty,
   IsPositive,
   IsString,
   IsUrl,
   Matches,
-  Max,
-  Min,
   MinLength,
   validateSync,
 } from 'class-validator';
@@ -31,20 +28,6 @@ export class Env {
 
   @IsUrl({ protocols: ['postgres', 'postgresql'], require_tld: false })
   DATABASE_URL: string;
-
-  @IsString()
-  @IsNotEmpty()
-  REDIS_HOST: string;
-
-  @IsInt()
-  @IsPositive()
-  REDIS_PORT: number;
-
-  // Redis database number (0 to 15). Apps that share one Redis server use different numbers.
-  @IsInt()
-  @Min(0)
-  @Max(15)
-  REDIS_DB: number = 0;
 
   @IsString()
   @MinLength(32)
