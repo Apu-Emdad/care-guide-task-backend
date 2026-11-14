@@ -4,7 +4,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import type { Env } from '../../config/env.js';
-import type { User } from '../auth/auth.types.js';
+import type { User } from '../../common/types/auth.types.js';
 import { setRefreshCookie } from '../../common/utils/refresh-cookie.util.js';
 import { ChangePasswordDto, UpdateProfileDto } from './profile.dto.js';
 import { ProfileService } from './profile.service.js';

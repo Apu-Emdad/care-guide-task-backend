@@ -12,7 +12,7 @@ import type { Response } from 'express';
 import { ROLE } from '../../common/constants/roles.js';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import type { User } from '../auth/auth.types.js';
+import type { User } from '../../common/types/auth.types.js';
 import { UsersQueryDto } from './users.dto.js';
 import { UsersService } from './users.service.js';
 

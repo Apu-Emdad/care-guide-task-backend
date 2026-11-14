@@ -49,3 +49,24 @@ export class RegisterDto {
   @MaxLength(128, { message: 'Password must be at most 128 characters' })
   password: string;
 }
+
+export class LoginDto {
+  @ApiProperty({
+    example: 'admin',
+    description:
+      'Username or email. A value containing "@" is treated as an email.',
+  })
+  @Transform(toLowerTrimmed)
+  @IsString({ message: 'Username or email must be a string' })
+  @IsNotEmpty({ message: 'Username or email is required' })
+  @MaxLength(254, {
+    message: 'Username or email must be at most 254 characters',
+  })
+  userNameOrEmail: string;
+
+  @ApiProperty({ example: '12345678' })
+  @IsString({ message: 'Password must be a string' })
+  @IsNotEmpty({ message: 'Password is required' })
+  @MaxLength(128, { message: 'Password must be at most 128 characters' })
+  password: string;
+}

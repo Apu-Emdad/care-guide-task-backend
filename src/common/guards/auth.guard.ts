@@ -56,7 +56,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('User no longer exists');
     }
 
-    request.user = { uid: payload.sub, role: user.role };
+    request.user = { id: payload.sub, role: user.role };
     return true;
   }
 

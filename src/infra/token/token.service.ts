@@ -87,7 +87,7 @@ export class TokenService {
 
   /**
    * Checks a refresh token and uses it up.
-   * Returns the user's uid; the caller issues the new pair.
+   * Returns the user's id; the caller issues the new pair.
    */
   async consume(refreshToken: string | undefined): Promise<string> {
     const payload = await this.verify(refreshToken);
@@ -122,9 +122,9 @@ export class TokenService {
   }
 
   // Ends every session of a user (password change, user delete, token reuse).
-  async revokeAll(userUid: string): Promise<void> {
+  async revokeAll(userId: string): Promise<void> {
     await this.refreshTokens.deleteMany({
-      userId: new Types.ObjectId(userUid),
+      userId: new Types.ObjectId(userId),
     });
   }
 

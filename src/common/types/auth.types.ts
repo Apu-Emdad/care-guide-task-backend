@@ -1,9 +1,9 @@
-import type { Result } from '../../common/interfaces/result.interface.js';
+import type { Result } from '../interfaces/result.interface.js';
 import type { UserRole } from '../../infra/mongo/schemas/user.schema.js';
 
 // The logged-in user attached to the request by AuthGuard.
 export interface User {
-  uid: string;
+  id: string;
   role: UserRole;
 }
 
