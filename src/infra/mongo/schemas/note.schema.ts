@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, type HydratedDocument } from 'mongoose';
 
-@Schema({ collection: 'notes', timestamps: true })
+@Schema({ collection: 'notes', timestamps: true, versionKey: false })
 export class Note {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   author: Types.ObjectId;

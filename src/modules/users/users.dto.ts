@@ -1,14 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 import { ROLE, type RoleName } from '../../common/constants/roles.js';
 import { toBoolean } from '../../common/utils/to-boolean.util.js';
 
@@ -38,14 +30,11 @@ export class UsersQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'Page must be a whole number' })
-  @Min(1, { message: 'Page must be at least 1' })
   page?: number;
 
   @ApiPropertyOptional({ default: 10 })
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'Page size must be a whole number' })
-  @Min(1, { message: 'Page size must be at least 1' })
-  @Max(100, { message: 'Page size must be at most 100' })
   pageSize?: number;
 }

@@ -17,9 +17,8 @@ import {
   User,
   type UserDocument,
 } from '../../infra/mongo/schemas/user.schema.js';
-import type { AuthResult } from './auth.types.js';
-import { LoginDto } from './dto/login.dto.js';
-import { RegisterDto } from './dto/register.dto.js';
+import type { AuthResult } from '../../common/types/auth.types.js';
+import { LoginDto, RegisterDto } from './auth.dto.js';
 import { TokenService } from '../../infra/token/token.service.js';
 import { toSafeUser } from '../../common/utils/safe-user.util.js';
 
@@ -83,9 +82,9 @@ export class AuthService {
 
   // Uses up the refresh token from the cookie and issues a new pair (rotation).
   async refresh(refreshToken: string | undefined): Promise<AuthResult> {
-    const uid = await this.tokenService.consume(refreshToken);
+    const id = await this.tokenService.consume(refreshToken);
 
-    const user = await this.users.findById(uid);
+    const user = await this.users.findById(id);
     if (!user) {
       throw new UnauthorizedException('User no longer exists');
     }
@@ -107,8 +106,8 @@ export class AuthService {
     return { status: HttpStatus.OK, message: 'Logged out' };
   }
 
-  async me(uid: string): Promise<Result> {
-    const user = await this.users.findById(uid);
+  async me(id: string): Promise<Result> {
+    const user = await this.users.findById(id);
 
     if (!user) {
       throw new NotFoundException('User not found');

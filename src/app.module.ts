@@ -12,6 +12,7 @@ import { AuthGuard } from './common/guards/auth.guard.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { TokenModule } from './infra/token/token.module.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
+import { NotesModule } from './modules/notes/notes.module.js';
 import { ProfileModule } from './modules/profile/profile.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -28,6 +29,7 @@ import { UsersModule } from './modules/users/users.module.js';
     ErrorLoggerModule,
     AuthModule,
     UsersModule,
+    NotesModule,
     ProfileModule,
   ],
   controllers: [HealthController],

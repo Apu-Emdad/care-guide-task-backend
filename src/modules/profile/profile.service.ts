@@ -14,7 +14,7 @@ import {
   duplicateKeyMessage,
 } from '../../infra/mongo/duplicate-key.js';
 import { User as UserModel } from '../../infra/mongo/schemas/user.schema.js';
-import type { AuthResult, User } from '../auth/auth.types.js';
+import type { AuthResult, User } from '../../common/types/auth.types.js';
 import { toSafeUser } from '../../common/utils/safe-user.util.js';
 import { TokenService } from '../../infra/token/token.service.js';
 import { ChangePasswordDto, UpdateProfileDto } from './profile.dto.js';
@@ -30,7 +30,7 @@ export class ProfileService {
     let updated;
     try {
       updated = await this.users.findByIdAndUpdate(
-        issuer.uid,
+        issuer.id,
         { userName: dto.userName, fullName: dto.fullName, email: dto.email },
         { returnDocument: 'after' },
       );
@@ -62,7 +62,7 @@ export class ProfileService {
     dto: ChangePasswordDto,
   ): Promise<AuthResult> {
     // 1. checking the current password
-    const user = await this.users.findById(issuer.uid).select('+passwordHash');
+    const user = await this.users.findById(issuer.id).select('+passwordHash');
 
     if (!user) {
       throw new NotFoundException('User not found');

@@ -6,9 +6,8 @@ import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import type { Env } from '../../config/env.js';
 import { AuthService } from './auth.service.js';
-import type { User } from './auth.types.js';
-import { LoginDto } from './dto/login.dto.js';
-import { RegisterDto } from './dto/register.dto.js';
+import type { User } from '../../common/types/auth.types.js';
+import { LoginDto, RegisterDto } from './auth.dto.js';
 import {
   REFRESH_COOKIE,
   refreshCookieOptions,
@@ -63,7 +62,7 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   async me(@Issuer() issuer: User, @Res() res: Response) {
-    const result = await this.authService.me(issuer.uid);
+    const result = await this.authService.me(issuer.id);
     res.status(result.status).json(result);
   }
 
