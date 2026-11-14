@@ -1,13 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, type HydratedDocument } from 'mongoose';
 
-/**
- * posts collection
- *
- * Index: `{ author, _id: -1 }`. It lists the posts of one author newest first, and it is
- * the index the `$lookup` from users uses to join posts. The list of all posts sorts by
- * `_id`, which is already indexed.
- */
 @Schema({ collection: 'posts', timestamps: true })
 export class Post {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

@@ -65,12 +65,12 @@ Only indexes that a query needs exist. Besides these, every collection has the d
 | ---------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
 | `users`          | `{ email: 1 }`, unique      | Login by email and the duplicate email check on register and update                          |
 | `refresh_tokens` | `{ expiresAt: 1 }`, TTL 0 s | Removes expired sessions                                                                     |
-| `refresh_tokens` | `{ userId: 1 }`             | Ends all sessions of a user                                                                  |
 | `notes`          | `{ owner: 1, _id: -1 }`     | A user's notes, newest first, and the owner check on one note                                |
 | `posts`          | `{ author: 1, _id: -1 }`    | The posts of one author, newest first, and the `$lookup` from users in the posts aggregation |
 
 ### Queries that need no extra index
 
 - **Get by id** (a user, a note, a post, a session): the default `_id` index.
+- **End all sessions of a user** (`deleteMany({ userId })`): rare, and the TTL index keeps `refresh_tokens` small, so a scan is cheap. An index on `userId` would slow every login for little gain.
 - **Admin: list all users** and **list all notes**, **list all posts**: sorted by `_id`, which is the default index. Pagination uses `_id` as the cursor.
 - **Users grouped by interests**: one aggregation over the whole `users` collection (`$unwind` and `$group`). It reads every user, so an index would not help. This is checked again with `explain()` in the index review.
