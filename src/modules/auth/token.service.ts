@@ -1,9 +1,11 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import type { Env } from '../../config/env.js';
-import { RedisService } from '../../infra/redis/redis.service.js';
+import { RefreshToken } from '../../infra/mongo/schemas/refresh-token.schema.js';
 import type { JwtPayload, RefreshPayload } from './auth.types.js';
 
 export interface TokenPair {
@@ -14,19 +16,24 @@ export interface TokenPair {
 }
 
 /**
- * Issues access and refresh tokens and keeps refresh tokens in Redis.
+ * Issues access and refresh tokens and keeps refresh sessions in MongoDB.
  *
- * Each refresh token is stored as `refresh:<userUid>:<jti>` with a TTL equal to its lifetime.
- * - Rotation: a refresh token works once; using it deletes its key and issues a new pair.
- * - Reuse detection: a valid token whose key is already gone was used before
- *   (likely stolen), so every refresh token of that user is revoked.
- * - Logout deletes the key, so the token stops working immediately.
+ * Each login creates one document in `refresh_tokens`. Its `_id` is the session id
+ * (`jti`), which is also inside the refresh token. Only a SHA-256 hash of the token
+ * is stored, never the token itself.
+ * - Rotation: a refresh token works once; using it deletes its session and issues a new pair.
+ * - Reuse detection: a valid token whose session is already gone was used before
+ *   (likely stolen), so every session of that user is revoked.
+ * - Logout deletes the session, so the token stops working immediately.
+ * - Expiry: MongoDB removes expired sessions with a TTL index, but that can run up to a
+ *   minute late, so `expiresAt` is also checked in code.
  */
 @Injectable()
 export class TokenService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly redis: RedisService,
+    @InjectModel(RefreshToken.name)
+    private readonly refreshTokens: Model<RefreshToken>,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -51,12 +58,12 @@ export class TokenService {
       }),
     ]);
 
-    await this.redis.set(
-      this.key(payload.sub, jti),
-      '1',
-      'EX',
-      refreshExpiresIn,
-    );
+    await this.refreshTokens.create({
+      _id: jti,
+      userId: new Types.ObjectId(payload.sub),
+      tokenHash: this.hash(refreshToken),
+      expiresAt: new Date(Date.now() + refreshExpiresIn * 1000),
+    });
 
     return { accessToken, accessExpiresIn, refreshToken, refreshExpiresIn };
   }
@@ -67,40 +74,41 @@ export class TokenService {
    */
   async consume(refreshToken: string | undefined): Promise<string> {
     const payload = await this.verify(refreshToken);
-    if (!payload) {
+    if (!refreshToken || !payload) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const deleted = await this.redis.unlink(this.key(payload.sub, payload.jti));
-    if (deleted === 0) {
+    // One atomic step: only the first request can delete the session
+    const session = await this.refreshTokens.findOneAndDelete({
+      _id: payload.jti,
+      tokenHash: this.hash(refreshToken),
+    });
+    if (!session) {
       await this.revokeAll(payload.sub);
       throw new UnauthorizedException(
         'Refresh token was already used; please log in again',
       );
     }
 
+    // The TTL index can be up to a minute late
+    if (session.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
     return payload.sub;
   }
 
-  // Logout: deletes the token's key. An invalid or missing token is ignored.
+  // Logout: deletes the token's session. An invalid or missing token is ignored.
   async revoke(refreshToken: string | undefined): Promise<void> {
     const payload = await this.verify(refreshToken);
-    if (payload) await this.redis.unlink(this.key(payload.sub, payload.jti));
+    if (payload) await this.refreshTokens.deleteOne({ _id: payload.jti });
   }
 
+  // Ends every session of a user (password change, user delete, token reuse).
   async revokeAll(userUid: string): Promise<void> {
-    let cursor = '0';
-    do {
-      const [next, keys] = await this.redis.scan(
-        cursor,
-        'MATCH',
-        this.key(userUid, '*'),
-        'COUNT',
-        100,
-      );
-      if (keys.length) await this.redis.unlink(...keys);
-      cursor = next;
-    } while (cursor !== '0');
+    await this.refreshTokens.deleteMany({
+      userId: new Types.ObjectId(userUid),
+    });
   }
 
   private async verify(
@@ -116,7 +124,7 @@ export class TokenService {
     }
   }
 
-  private key(userUid: string, jti: string): string {
-    return `refresh:${userUid}:${jti}`;
+  private hash(refreshToken: string): string {
+    return createHash('sha256').update(refreshToken).digest('hex');
   }
 }
