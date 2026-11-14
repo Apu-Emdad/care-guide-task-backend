@@ -18,7 +18,7 @@
     "prisma:generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed",
+    "db:seed": "tsx scripts/seed.ts",
     "docker:deps": "docker compose up postgres redis migrate"
   },
   "dependencies": {
