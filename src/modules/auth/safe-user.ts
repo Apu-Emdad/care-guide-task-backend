@@ -10,6 +10,5 @@ export const toSafeUser = (user: UserWithRole) => ({
   userName: user.userName,
   email: user.email,
   role: user.roleInfo.name,
-  emailVerified: !!user.emailVerifiedAt,
   createdAt: user.createdAt,
 });
