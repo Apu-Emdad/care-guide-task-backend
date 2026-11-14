@@ -8,7 +8,7 @@ import {
 import type { Result } from '../../common/interfaces/result.interface.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
-import type { AuthUser } from '../auth/auth.types.js';
+import type { User } from '../auth/auth.types.js';
 import { TokenService } from '../auth/token.service.js';
 import { UsersQueryDto } from './users.dto.js';
 
@@ -92,9 +92,9 @@ export class UsersService {
     };
   }
 
-  async deactivateUser(uid: string, authUser: AuthUser): Promise<Result> {
+  async deactivateUser(uid: string, issuer: User): Promise<Result> {
     // 1. finding the user: a super admin can't deactivate their own account
-    if (uid === authUser.uid) {
+    if (uid === issuer.uid) {
       throw new ForbiddenException('You cannot deactivate your own account');
     }
 
@@ -123,9 +123,9 @@ export class UsersService {
     return { status: HttpStatus.OK, message: 'User deactivated successfully' };
   }
 
-  async deleteUser(uid: string, authUser: AuthUser): Promise<Result> {
+  async deleteUser(uid: string, issuer: User): Promise<Result> {
     // 1. finding the user: a super admin can't delete their own account
-    if (uid === authUser.uid) {
+    if (uid === issuer.uid) {
       throw new ForbiddenException('You cannot delete your own account');
     }
 

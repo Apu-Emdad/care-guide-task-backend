@@ -9,7 +9,7 @@ import * as argon2 from 'argon2';
 import type { Result } from '../../common/interfaces/result.interface.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { AuthService } from '../auth/auth.service.js';
-import type { AuthResult, AuthUser } from '../auth/auth.types.js';
+import type { AuthResult, User } from '../auth/auth.types.js';
 import { toSafeUser } from '../auth/safe-user.js';
 import { TokenService } from '../auth/token.service.js';
 import { ChangePasswordDto, UpdateProfileDto } from './profile.dto.js';
@@ -22,13 +22,10 @@ export class ProfileService {
     private readonly tokenService: TokenService,
   ) {}
 
-  async updateProfile(
-    authUser: AuthUser,
-    dto: UpdateProfileDto,
-  ): Promise<Result> {
+  async updateProfile(issuer: User, dto: UpdateProfileDto): Promise<Result> {
     // 1. finding the user
     const user = await this.prisma.user.findUnique({
-      where: { uid: authUser.uid },
+      where: { uid: issuer.uid },
       select: { id: true, userName: true, email: true },
     });
 
@@ -76,12 +73,12 @@ export class ProfileService {
    * current one; revoking all and issuing a fresh pair keeps the caller logged in.
    */
   async changePassword(
-    authUser: AuthUser,
+    issuer: User,
     dto: ChangePasswordDto,
   ): Promise<AuthResult> {
     // 1. checking the current password
     const user = await this.prisma.user.findUnique({
-      where: { uid: authUser.uid },
+      where: { uid: issuer.uid },
       select: { id: true, passwordHash: true },
     });
 

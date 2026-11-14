@@ -2,11 +2,11 @@ import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import type { Env } from '../../config/env.js';
 import { AuthService } from './auth.service.js';
-import type { AuthUser } from './auth.types.js';
+import type { User } from './auth.types.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import {
@@ -62,8 +62,8 @@ export class AuthController {
 
   @Get('me')
   @ApiBearerAuth()
-  async me(@CurrentUser() authUser: AuthUser, @Res() res: Response) {
-    const result = await this.authService.me(authUser.uid);
+  async me(@Issuer() issuer: User, @Res() res: Response) {
+    const result = await this.authService.me(issuer.uid);
     res.status(result.status).json(result);
   }
 

@@ -10,15 +10,15 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ROLE } from '../../common/constants/roles.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import type { AuthUser } from '../auth/auth.types.js';
+import type { User } from '../auth/auth.types.js';
 import { UsersQueryDto } from './users.dto.js';
 import { UsersService } from './users.service.js';
 
 @ApiBearerAuth()
 @ApiTags('Users')
-@Roles(ROLE.SUPER_ADMIN)
+@Roles(ROLE.ADMIN)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -38,20 +38,20 @@ export class UsersController {
   @Patch('deactivate/:uid')
   async deactivateUser(
     @Param('uid') uid: string,
-    @CurrentUser() authUser: AuthUser,
+    @Issuer() issuer: User,
     @Res() res: Response,
   ) {
-    const result = await this.usersService.deactivateUser(uid, authUser);
+    const result = await this.usersService.deactivateUser(uid, issuer);
     res.status(result.status).json(result);
   }
 
   @Delete(':uid')
   async deleteUser(
     @Param('uid') uid: string,
-    @CurrentUser() authUser: AuthUser,
+    @Issuer() issuer: User,
     @Res() res: Response,
   ) {
-    const result = await this.usersService.deleteUser(uid, authUser);
+    const result = await this.usersService.deleteUser(uid, issuer);
     res.status(result.status).json(result);
   }
 }

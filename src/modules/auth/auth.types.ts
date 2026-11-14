@@ -14,7 +14,7 @@ export interface RefreshPayload {
 }
 
 // The logged-in user attached to the request by AuthGuard.
-export interface AuthUser {
+export interface User {
   uid: string;
   userName: string;
   role: string;
@@ -33,6 +33,6 @@ export interface AuthResult {
 
 declare module 'express' {
   interface Request {
-    user?: AuthUser;
+    user?: User;
   }
 }
