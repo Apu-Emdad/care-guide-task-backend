@@ -1,23 +1,10 @@
 import type { Result } from '../../common/interfaces/result.interface.js';
-
-// Claims inside the access token.
-export interface JwtPayload {
-  sub: string; // user uid
-  userName: string;
-  role: string;
-}
-
-// Claims inside the refresh token. `jti` is the session id in MongoDB.
-export interface RefreshPayload {
-  sub: string; // user uid
-  jti: string;
-}
+import type { UserRole } from '../../infra/mongo/schemas/user.schema.js';
 
 // The logged-in user attached to the request by AuthGuard.
 export interface User {
   uid: string;
-  userName: string;
-  role: string;
+  role: UserRole;
 }
 
 /**

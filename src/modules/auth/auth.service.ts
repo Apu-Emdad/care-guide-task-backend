@@ -1,53 +1,52 @@
 import {
   ConflictException,
-  ForbiddenException,
   HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import * as argon2 from 'argon2';
-import { ROLE } from '../../common/constants/roles.js';
+import { Model } from 'mongoose';
 import type { Result } from '../../common/interfaces/result.interface.js';
-import { PrismaService } from '../../infra/prisma/prisma.service.js';
-import type { AuthResult, JwtPayload } from './auth.types.js';
+import {
+  duplicateKeyField,
+  duplicateKeyMessage,
+} from '../../infra/mongo/duplicate-key.js';
+import {
+  User,
+  type UserDocument,
+} from '../../infra/mongo/schemas/user.schema.js';
+import type { AuthResult } from './auth.types.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
-import { toSafeUser, type UserWithRole } from './safe-user.js';
-import { TokenService } from './token.service.js';
+import { TokenService } from '../../infra/token/token.service.js';
+import { toSafeUser } from '../../common/utils/safe-user.util.js';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    @InjectModel(User.name) private readonly users: Model<User>,
     private readonly tokenService: TokenService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResult> {
-    const existing = await this.prisma.user.findFirst({
-      where: { OR: [{ userName: dto.userName }, { email: dto.email }] },
-      select: { userName: true },
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        existing.userName === dto.userName
-          ? 'Username is already taken'
-          : 'Email is already registered',
-      );
-    }
-
-    const user = await this.prisma.user.create({
-      data: {
+    let user: UserDocument;
+    try {
+      user = await this.users.create({
         userName: dto.userName,
+        fullName: dto.fullName,
         email: dto.email,
         passwordHash: await argon2.hash(dto.password),
-        roleInfo: { connect: { name: ROLE.USER } },
-      },
-      include: { roleInfo: true },
-    });
+      });
+    } catch (error) {
+      // The unique indexes on email and userName reject a second user with the same value
+      const field = duplicateKeyField(error);
+      if (field) throw new ConflictException(duplicateKeyMessage(field));
+      throw error;
+    }
 
-    const { tokens, ...refresh } = await this.issueTokens(user);
+    const { tokens, ...refresh } = await this.tokenService.issueTokens(user);
     return {
       ...refresh,
       result: {
@@ -59,25 +58,19 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {
-    // Usernames can't contain "@", so a value with "@" is an email.
-    const where = dto.userNameOrEmail.includes('@')
+    // The password hash is hidden by default, so it is asked for here
+    // User names can't contain "@", so a value with "@" is an email.
+    const filter = dto.userNameOrEmail.includes('@')
       ? { email: dto.userNameOrEmail }
       : { userName: dto.userNameOrEmail };
-
-    const user = await this.prisma.user.findUnique({
-      where,
-      include: { roleInfo: true },
-    });
+    const user = await this.users.findOne(filter).select('+passwordHash');
 
     // Same message for an unknown user and a wrong password, so accounts can't be discovered.
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
       throw new UnauthorizedException('Invalid username, email or password');
     }
-    if (!user.isActive) {
-      throw new ForbiddenException('Account is disabled');
-    }
 
-    const { tokens, ...refresh } = await this.issueTokens(user);
+    const { tokens, ...refresh } = await this.tokenService.issueTokens(user);
     return {
       ...refresh,
       result: {
@@ -92,19 +85,12 @@ export class AuthService {
   async refresh(refreshToken: string | undefined): Promise<AuthResult> {
     const uid = await this.tokenService.consume(refreshToken);
 
-    const user = await this.prisma.user.findUnique({
-      where: { uid },
-      include: { roleInfo: true },
-    });
-
+    const user = await this.users.findById(uid);
     if (!user) {
       throw new UnauthorizedException('User no longer exists');
     }
-    if (!user.isActive) {
-      throw new ForbiddenException('Account is disabled');
-    }
 
-    const { tokens, ...refresh } = await this.issueTokens(user);
+    const { tokens, ...refresh } = await this.tokenService.issueTokens(user);
     return {
       ...refresh,
       result: {
@@ -122,10 +108,7 @@ export class AuthService {
   }
 
   async me(uid: string): Promise<Result> {
-    const user = await this.prisma.user.findUnique({
-      where: { uid },
-      include: { roleInfo: true },
-    });
+    const user = await this.users.findById(uid);
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -135,26 +118,6 @@ export class AuthService {
       status: HttpStatus.OK,
       message: 'Current user fetched successfully',
       data: toSafeUser(user),
-    };
-  }
-
-  // `tokens` goes in the response data; the refresh token only goes in the cookie.
-  async issueTokens(user: UserWithRole) {
-    const payload: JwtPayload = {
-      sub: user.uid,
-      userName: user.userName,
-      role: user.roleInfo.name,
-    };
-    const tokens = await this.tokenService.issue(payload);
-
-    return {
-      refreshToken: tokens.refreshToken,
-      refreshExpiresIn: tokens.refreshExpiresIn,
-      tokens: {
-        accessToken: tokens.accessToken,
-        tokenType: 'Bearer',
-        expiresIn: tokens.accessExpiresIn,
-      },
     };
   }
 }

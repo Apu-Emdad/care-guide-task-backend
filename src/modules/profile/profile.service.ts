@@ -5,60 +5,45 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import * as argon2 from 'argon2';
+import { Model } from 'mongoose';
 import type { Result } from '../../common/interfaces/result.interface.js';
-import { PrismaService } from '../../infra/prisma/prisma.service.js';
-import { AuthService } from '../auth/auth.service.js';
+import {
+  duplicateKeyField,
+  duplicateKeyMessage,
+} from '../../infra/mongo/duplicate-key.js';
+import { User as UserModel } from '../../infra/mongo/schemas/user.schema.js';
 import type { AuthResult, User } from '../auth/auth.types.js';
-import { toSafeUser } from '../auth/safe-user.js';
-import { TokenService } from '../auth/token.service.js';
+import { toSafeUser } from '../../common/utils/safe-user.util.js';
+import { TokenService } from '../../infra/token/token.service.js';
 import { ChangePasswordDto, UpdateProfileDto } from './profile.dto.js';
 
 @Injectable()
 export class ProfileService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly authService: AuthService,
+    @InjectModel(UserModel.name) private readonly users: Model<UserModel>,
     private readonly tokenService: TokenService,
   ) {}
 
   async updateProfile(issuer: User, dto: UpdateProfileDto): Promise<Result> {
-    // 1. finding the user
-    const user = await this.prisma.user.findUnique({
-      where: { uid: issuer.uid },
-      select: { id: true, userName: true, email: true },
-    });
+    let updated;
+    try {
+      updated = await this.users.findByIdAndUpdate(
+        issuer.uid,
+        { userName: dto.userName, fullName: dto.fullName, email: dto.email },
+        { returnDocument: 'after' },
+      );
+    } catch (error) {
+      // The unique indexes reject an email or user name that another user has
+      const field = duplicateKeyField(error);
+      if (field) throw new ConflictException(duplicateKeyMessage(field));
+      throw error;
+    }
 
-    if (!user) {
+    if (!updated) {
       throw new NotFoundException('User not found');
     }
-
-    // 2. checking the new user name and email are free
-    const taken = await this.prisma.user.findFirst({
-      where: {
-        id: { not: user.id },
-        OR: [{ userName: dto.userName }, { email: dto.email }],
-      },
-      select: { userName: true },
-    });
-
-    if (taken) {
-      throw new ConflictException(
-        taken.userName === dto.userName
-          ? 'Username is already taken'
-          : 'Email is already registered',
-      );
-    }
-
-    // 3. saving
-    const updated = await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        userName: dto.userName,
-        email: dto.email,
-      },
-      include: { roleInfo: true },
-    });
 
     return {
       status: HttpStatus.OK,
@@ -77,10 +62,7 @@ export class ProfileService {
     dto: ChangePasswordDto,
   ): Promise<AuthResult> {
     // 1. checking the current password
-    const user = await this.prisma.user.findUnique({
-      where: { uid: issuer.uid },
-      select: { id: true, passwordHash: true },
-    });
+    const user = await this.users.findById(issuer.uid).select('+passwordHash');
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -91,22 +73,19 @@ export class ProfileService {
     }
 
     // 2. saving the new password
-    const updated = await this.prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash: await argon2.hash(dto.newPassword) },
-      include: { roleInfo: true },
-    });
+    user.passwordHash = await argon2.hash(dto.newPassword);
+    await user.save();
 
     // 3. logging out every session, then issuing a new pair for this one
-    await this.tokenService.revokeAll(updated.uid);
-    const { tokens, ...refresh } = await this.authService.issueTokens(updated);
+    await this.tokenService.revokeAll(user.id);
+    const { tokens, ...refresh } = await this.tokenService.issueTokens(user);
 
     return {
       ...refresh,
       result: {
         status: HttpStatus.OK,
         message: 'Password changed. Other sessions were logged out.',
-        data: { ...tokens, user: toSafeUser(updated) },
+        data: { ...tokens, user: toSafeUser(user) },
       },
     };
   }

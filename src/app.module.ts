@@ -8,9 +8,10 @@ import { validateEnv } from './config/env.js';
 import { HealthController } from './health/health.controller.js';
 import { MongoModule } from './infra/mongo/mongo.module.js';
 import { PrismaModule } from './infra/prisma/prisma.module.js';
-import { AuthGuard } from './modules/auth/auth.guard.js';
+import { AuthGuard } from './common/guards/auth.guard.js';
 import { AuthModule } from './modules/auth/auth.module.js';
-import { RolesGuard } from './modules/auth/roles.guard.js';
+import { TokenModule } from './infra/token/token.module.js';
+import { RolesGuard } from './common/guards/roles.guard.js';
 import { ProfileModule } from './modules/profile/profile.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -22,6 +23,7 @@ import { UsersModule } from './modules/users/users.module.js';
       validate: validateEnv,
     }),
     MongoModule,
+    TokenModule,
     PrismaModule,
     ErrorLoggerModule,
     AuthModule,

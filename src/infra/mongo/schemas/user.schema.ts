@@ -7,6 +7,12 @@ export type UserRole = (typeof USER_ROLES)[number];
 @Schema({ collection: 'users', timestamps: true })
 export class User {
   @Prop({ required: true, trim: true, lowercase: true })
+  userName: string;
+
+  @Prop({ required: true, trim: true })
+  fullName: string;
+
+  @Prop({ required: true, trim: true, lowercase: true })
   email: string;
 
   @Prop({ required: true, select: false })
@@ -17,6 +23,10 @@ export class User {
 
   @Prop({ type: [String], default: [] })
   interests: string[];
+
+  createdAt: Date;
+
+  updatedAt: Date;
 }
 
 export type UserDocument = HydratedDocument<User>;
@@ -24,3 +34,4 @@ export type UserDocument = HydratedDocument<User>;
 export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ userName: 1 }, { unique: true });
