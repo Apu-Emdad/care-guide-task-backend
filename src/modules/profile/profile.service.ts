@@ -3,7 +3,6 @@ import {
   ConflictException,
   HttpStatus,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
@@ -11,20 +10,16 @@ import type { Result } from '../../common/interfaces/result.interface.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { AuthService } from '../auth/auth.service.js';
 import type { AuthResult, AuthUser } from '../auth/auth.types.js';
-import { EmailTokenService } from '../auth/email-token.service.js';
 import { toSafeUser } from '../auth/safe-user.js';
 import { TokenService } from '../auth/token.service.js';
 import { ChangePasswordDto, UpdateProfileDto } from './profile.dto.js';
 
 @Injectable()
 export class ProfileService {
-  private readonly logger = new Logger(ProfileService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
     private readonly tokenService: TokenService,
-    private readonly emailTokenService: EmailTokenService,
   ) {}
 
   async updateProfile(
@@ -58,34 +53,19 @@ export class ProfileService {
       );
     }
 
-    // 3. saving; a new email has to be verified again
-    const emailChanged = dto.email !== user.email;
+    // 3. saving
     const updated = await this.prisma.user.update({
       where: { id: user.id },
       data: {
         userName: dto.userName,
         email: dto.email,
-        ...(emailChanged && { emailVerifiedAt: null }),
       },
       include: { roleInfo: true },
     });
 
-    // 4. sending the verify email; a failure must not undo the saved change
-    if (emailChanged) {
-      await this.emailTokenService
-        .sendVerifyEmail(updated)
-        .catch((error: unknown) =>
-          this.logger.error(
-            `Could not send the verify email to user ${updated.uid}: ${error instanceof Error ? error.message : String(error)}`,
-          ),
-        );
-    }
-
     return {
       status: HttpStatus.OK,
-      message: emailChanged
-        ? 'Profile updated. We sent a link to verify your new email.'
-        : 'Profile updated successfully',
+      message: 'Profile updated successfully',
       data: toSafeUser(updated),
     };
   }
