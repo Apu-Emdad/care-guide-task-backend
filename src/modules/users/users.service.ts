@@ -23,6 +23,7 @@ import { TokenService } from '../../infra/token/token.service.js';
 import type {
   CreateUserDto,
   UpdateUserDto,
+  UsersByInterestQueryDto,
   UsersQueryDto,
 } from './users.dto.js';
 
@@ -93,6 +94,56 @@ export class UsersService {
       status: HttpStatus.OK,
       message: 'Users fetched successfully',
       data: { users: users.map(toSafeUser), total },
+    };
+  }
+
+  /**
+   * Users grouped by interest, in one aggregate call.
+   *
+   * Each interest comes with its total user count and one page of its users, newest
+   * first. Interests with the most users come first. The pipeline has no $match, so it
+   * reads every user and an index on `interests` would not help.
+   */
+  async getUsersByInterest(query: UsersByInterestQueryDto): Promise<Result> {
+    const skip = (query.page - 1) * query.pageSize;
+
+    const groups = await this.users.aggregate([
+      // 1. one document per user and interest
+      { $unwind: '$interests' },
+      // 2. newest users first, so each group lists them in that order
+      { $sort: { _id: -1 } },
+      // 3. one group per interest, with its users and their count
+      {
+        $group: {
+          _id: '$interests',
+          count: { $sum: 1 },
+          users: {
+            $push: {
+              _id: '$_id',
+              userName: '$userName',
+              fullName: '$fullName',
+              email: '$email',
+            },
+          },
+        },
+      },
+      // 4. keeping one page of users in each group
+      {
+        $project: {
+          _id: 0,
+          interest: '$_id',
+          count: 1,
+          users: { $slice: ['$users', skip, query.pageSize] },
+        },
+      },
+      // 5. most popular interests first
+      { $sort: { count: -1, interest: 1 } },
+    ]);
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Users grouped by interest fetched successfully',
+      data: groups,
     };
   }
 

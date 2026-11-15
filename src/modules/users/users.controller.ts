@@ -16,7 +16,12 @@ import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe.js';
 import type { User } from '../../common/types/auth.types.js';
-import { CreateUserDto, UpdateUserDto, UsersQueryDto } from './users.dto.js';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UsersByInterestQueryDto,
+  UsersQueryDto,
+} from './users.dto.js';
 import { UsersService } from './users.service.js';
 
 @ApiBearerAuth()
@@ -35,6 +40,15 @@ export class UsersController {
   @Get()
   async getUsers(@Query() query: UsersQueryDto, @Res() res: Response) {
     const result = await this.usersService.getUsers(query);
+    res.status(result.status).json(result);
+  }
+
+  @Get('interests')
+  async getUsersByInterest(
+    @Query() query: UsersByInterestQueryDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.usersService.getUsersByInterest(query);
     res.status(result.status).json(result);
   }
 
