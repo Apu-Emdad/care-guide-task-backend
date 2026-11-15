@@ -60,7 +60,7 @@ yarn db:seed
 This creates:
 
 - one admin user
-- 20 dummy users with different interests, each with 1 to 3 notes and 1 to 2 posts (39 notes and 30 posts in total)
+- 20 dummy users with different interests, each with 1 to 3 notes and 1 to 2 posts
 
 Running it again adds nothing. The dummy users, notes and posts are saved in one transaction, so either all of them are saved or none.
 
