@@ -8,12 +8,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-
-const trimmed = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim() : value;
-
-const toLowerTrimmed = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim().toLowerCase() : value;
+import { toLowerTrimmed, trimmed } from '../../common/utils/transform.util.js';
 
 export class RegisterDto {
   @ApiProperty({

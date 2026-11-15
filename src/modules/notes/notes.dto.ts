@@ -7,9 +7,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-
-const trimmed = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim() : value;
+import { trimmed } from '../../common/utils/transform.util.js';
 
 export class CreateNoteDto {
   @ApiProperty({ example: 'Shopping list' })

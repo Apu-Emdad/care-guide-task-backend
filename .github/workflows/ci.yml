@@ -53,11 +53,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      # --- Generate the Prisma client ---------------------------------------
-      # Not committed, but lint, typecheck and build import it.
-      - name: Generate Prisma client
-        run: yarn prisma:generate
-
       # --- QUALITY GATES -----------------------------------------------------
       - name: Lint
         run: yarn lint

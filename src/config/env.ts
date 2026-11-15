@@ -26,9 +26,6 @@ export class Env {
   })
   MONGODB_URI: string;
 
-  @IsUrl({ protocols: ['postgres', 'postgresql'], require_tld: false })
-  DATABASE_URL: string;
-
   @IsString()
   @MinLength(32)
   JWT_ACCESS_SECRET: string;
