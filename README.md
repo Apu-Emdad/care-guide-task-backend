@@ -158,7 +158,7 @@ A note of another user returns 404, the same as a note that does not exist.
 
 ```
 src/
-  common/     shared constants, decorators, guards, pipes, types and utils
+  common/     shared constants, decorators, guards, pipes, filters, interceptors, types and utils
   config/     environment variable validation
   health/     health check
   infra/
@@ -166,7 +166,7 @@ src/
     token/    JWT and refresh token service
   modules/    auth, profile, notes, posts, users
   swagger/    Swagger UI helpers
-scripts/      seed script and Node version check
+scripts/      seed (admin and dummy data) and Node version check
 docs/         database schema
 ```
 
