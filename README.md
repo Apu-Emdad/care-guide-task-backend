@@ -154,28 +154,6 @@ A note of another user returns 404, the same as a note that does not exist.
 | ------ | --------- | ------ | --------------------------------------------- |
 | GET    | `/health` | Public | 200 when MongoDB answers, 503 when it doesn't |
 
-## Indexes
-
-Only indexes that a query needs exist. Each one was checked with `explain()`.
-
-| Collection       | Index                     | Used by                                             |
-| ---------------- | ------------------------- | --------------------------------------------------- |
-| `users`          | `{ email: 1 }`, unique    | Register and login by email. Stops duplicate emails |
-| `users`          | `{ userName: 1 }`, unique | Login by user name. Stops duplicate user names      |
-| `refresh_tokens` | `{ expiresAt: 1 }`, TTL   | MongoDB deletes expired sessions in the background  |
-| `notes`          | `{ author: 1, _id: -1 }`  | A user's notes, newest first, and their count       |
-| `posts`          | `{ author: 1, _id: -1 }`  | The `$lookup` in Aggregation 2, newest first        |
-
-Every other query uses the default `_id` index. See [docs/schema.md](docs/schema.md) for the full schema and the reason for each index.
-
-## Security notes
-
-- **Frontend role checks are only for convenience.** The frontend hides admin pages from normal users, but that is not security. The API checks the role on every request with `AuthGuard` and `RolesGuard`.
-- Refresh tokens are stored as SHA-256 hashes, never as plain text.
-- `passwordHash` is never returned by the API.
-- Search input is escaped before it goes into a regex.
-- A bad id returns 404, and unknown fields in a request body are rejected.
-
 ## Project structure
 
 ```
