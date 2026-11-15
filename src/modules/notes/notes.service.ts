@@ -64,6 +64,39 @@ export class NotesService {
     };
   }
 
+  /**
+   * Admin only: every user's notes, newest first, with the author's user name, full name and email in `author`.
+   * View only; admins can't change or delete other users' notes.
+   */
+  async getAllNotes(query: NotesQueryDto): Promise<Result> {
+    // 1. building the filter
+    const filter: QueryFilter<Note> = {};
+
+    // Case-insensitive match in title or content
+    if (query.search) {
+      const search = { $regex: escapeRegex(query.search), $options: 'i' };
+      filter.$or = [{ title: search }, { content: search }];
+    }
+
+    // 2. fetching the notes. Sorting by _id uses the default index.
+    const [total, notes] = await Promise.all([
+      this.notes.countDocuments(filter),
+      this.notes
+        .find(filter)
+        .sort({ _id: -1 })
+        .skip((query.page - 1) * query.pageSize)
+        .limit(query.pageSize)
+        .populate('author', 'userName fullName email'),
+    ]);
+
+    // 3. returning the result
+    return {
+      status: HttpStatus.OK,
+      message: 'Notes fetched successfully',
+      data: { notes, total },
+    };
+  }
+
   async getNote(issuer: User, id: string): Promise<Result> {
     const note = await this.notes.findOne({ _id: id, author: issuer.id });
     if (!note) throw new NotFoundException('Note not found');
