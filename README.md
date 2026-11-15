@@ -96,10 +96,6 @@ CI runs lint, typecheck and build on every push to `main` and every pull request
 
 ## Endpoints
 
-All paths start with `/api`. Lists take `page` (default 1) and `pageSize` (default 10) and return the items with a `total`.
-
-**Roles:** Public = no token. Logged in = any user with a token. Admin = `ADMIN` role only.
-
 ### Auth
 
 | Method | Path             | Role      | What it does                   |
