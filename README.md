@@ -68,8 +68,6 @@ This creates:
 
 Every dummy user has the password `12345678`, and the email `<userName>@example.com`, for example `rahim_uddin@example.com`.
 
-Change the admin password after the first login.
-
 ## Scripts
 
 | Script            | What it does                    |
