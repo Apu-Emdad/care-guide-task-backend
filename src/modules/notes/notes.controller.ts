@@ -11,7 +11,9 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { ROLE } from '../../common/constants/roles.js';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
+import { Roles } from '../../common/decorators/roles.decorator.js';
 import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe.js';
 import type { User } from '../../common/types/auth.types.js';
 import { CreateNoteDto, NotesQueryDto, UpdateNoteDto } from './notes.dto.js';
@@ -40,6 +42,13 @@ export class NotesController {
     @Res() res: Response,
   ) {
     const result = await this.notesService.getNotes(issuer, query);
+    res.status(result.status).json(result);
+  }
+
+  @Get('all')
+  @Roles(ROLE.ADMIN)
+  async getAllNotes(@Query() query: NotesQueryDto, @Res() res: Response) {
+    const result = await this.notesService.getAllNotes(query);
     res.status(result.status).json(result);
   }
 
