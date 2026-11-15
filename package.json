@@ -10,7 +10,7 @@
     "build": "node scripts/check-node.mjs && nest build",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "node scripts/check-node.mjs && nest start",
-    "dev": "node scripts/check-node.mjs && nest start --watch",
+    "start:dev": "node scripts/check-node.mjs && nest start --watch",
     "start:debug": "node scripts/check-node.mjs && nest start --debug --watch",
     "start:prod": "node scripts/check-node.mjs && node dist/main",
     "lint": "oxlint --type-aware src/",

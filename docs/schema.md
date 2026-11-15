@@ -61,19 +61,26 @@ One document per session.
 
 ## Indexes
 
-Only indexes that a query needs exist. Besides these, every collection has the default `_id` index.
+Only indexes that a query needs exist. There are 5, all defined with `schema.index`. Besides these, every collection has the default `_id` index.
 
-| Collection       | Index                       | Used by                                                                                      |
-| ---------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
-| `users`          | `{ email: 1 }`, unique      | Login by email and the duplicate email check on register and update                          |
-| `users`          | `{ userName: 1 }`, unique   | Login by user name and the duplicate user name check on register and update                  |
-| `refresh_tokens` | `{ expiresAt: 1 }`, TTL 0 s | Removes expired sessions                                                                     |
-| `notes`          | `{ author: 1, _id: -1 }`    | A user's notes, newest first, and the author check on one note                               |
-| `posts`          | `{ author: 1, _id: -1 }`    | The posts of one author, newest first, and the `$lookup` from users in the posts aggregation |
+Each index below was checked with `explain()`: the listed queries use it (`IXSCAN`).
 
-### Queries that need no extra index
+| Collection       | Index                       | Used by                                                                                                                |
+| ---------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `users`          | `{ email: 1 }`, unique      | Register and login by email. Unique stops two users having the same email                                              |
+| `users`          | `{ userName: 1 }`, unique   | Login by user name. Unique stops two users having the same user name                                                   |
+| `refresh_tokens` | `{ expiresAt: 1 }`, TTL 0 s | No query. MongoDB uses it in the background to delete expired sessions                                                 |
+| `notes`          | `{ author: 1, _id: -1 }`    | A user's notes, newest first, with and without search. Their count. Deleting a user's notes when the user is deleted   |
+| `posts`          | `{ author: 1, _id: -1 }`    | The `$lookup` from users in the user posts aggregation, newest first. Deleting a user's posts when the user is deleted |
 
-- **Get by id** (a user, a note, a post, a session): the default `_id` index.
-- **End all sessions of a user** (`deleteMany({ userId })`): rare, and the TTL index keeps `refresh_tokens` small, so a scan is cheap. An index on `userId` would slow every login for little gain.
-- **Admin: list all users** and **list all notes**, **list all posts**: sorted by `_id`, which is the default index. Pagination uses `_id` as the cursor.
-- **Users grouped by interests**: one aggregation over the whole `users` collection (`$unwind` and `$group`). It reads every user, so an index would not help. This is checked again with `explain()` in the index review.
+### Queries that use the default `_id` index
+
+- **Get by id**: a user (also the auth guard on every request), a post, a session on refresh.
+- **Get, update or delete one note**: `{ _id, author }` finds the note by `_id`, then checks `author`.
+- **Lists sorted newest first**: admin users list, admin notes list, posts list. They sort by `_id` and page with `skip` and `limit`.
+- **Users grouped by interests**: one aggregation over every user (`$unwind` and `$group`). It must read all users, so an index on `interests` would not help.
+- **The user in the user posts aggregation**: the first `$match` on `_id`.
+
+### Queries with no index
+
+- **End all sessions of a user** (`deleteMany({ userId })`): a collection scan. It runs rarely (password change, reused token, user delete), and the TTL index keeps `refresh_tokens` small. An index on `userId` would slow every login and refresh for little gain.
