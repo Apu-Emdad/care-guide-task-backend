@@ -22,34 +22,13 @@ NestJS 12, Mongoose 9, MongoDB Atlas, Node 24, Yarn 4, Swagger, oxlint, Prettier
 - Yarn 4, through Corepack: `corepack enable`.
 - A MongoDB Atlas cluster.
 
-### 2. MongoDB Atlas
-
-1. Create a free cluster.
-2. Under **Database Access**, add a database user with a strong password.
-3. Under **Network Access**, add your own IP address.
-4. Click **Connect > Drivers** and copy the `mongodb+srv://...` connection string.
-5. Add the database name at the end of the string, for example `.../care-guide-task`.
-
-The app creates the collections and indexes the first time it starts.
-
-### 3. Environment variables
+### 2. Environment variables
 
 Copy the example file and fill it in:
 
 ```bash
 cp .env.example .env
 ```
-
-| Variable                 | Required | Default                 | What it is                                                   |
-| ------------------------ | -------- | ----------------------- | ------------------------------------------------------------ |
-| `NODE_ENV`               | No       | `development`           | `development`, `test` or `production`                        |
-| `PORT`                   | No       | `5000`                  | Port the API listens on                                      |
-| `MONGODB_URI`            | Yes      |                         | Atlas connection string, ending with the database name       |
-| `JWT_ACCESS_SECRET`      | Yes      |                         | Secret for access tokens, at least 32 characters             |
-| `JWT_REFRESH_SECRET`     | Yes      |                         | Secret for refresh tokens, at least 32 characters, different |
-| `JWT_ACCESS_EXPIRES_IN`  | No       | `900`                   | Access token lifetime in seconds (15 minutes)                |
-| `JWT_REFRESH_EXPIRES_IN` | No       | `604800`                | Refresh token lifetime in seconds (7 days)                   |
-| `WEB_ORIGIN`             | No       | `http://localhost:5001` | Frontend origin, allowed by CORS to send the refresh cookie  |
 
 Generate each secret with:
 
@@ -59,7 +38,7 @@ openssl rand -base64 48
 
 The app checks these on startup and stops with a clear message if one is missing or wrong.
 
-### 4. Install and run
+### 3. Install and run
 
 ```bash
 yarn install
@@ -72,7 +51,7 @@ yarn start:dev
 - API: `http://localhost:5000/api`
 - Swagger: `http://localhost:5000/api/docs`
 
-### 5. Seed the admin and dummy data
+### 4. Seed the admin and dummy data
 
 ```bash
 yarn db:seed
