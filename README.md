@@ -48,8 +48,10 @@ yarn install
 yarn start:dev
 ```
 
-- API: `http://localhost:5000/api`
-- Swagger: `http://localhost:5000/api/docs`
+> [!IMPORTANT]
+> **Open Swagger to try the API:** http://localhost:5000/api/docs
+>
+> API base URL: `http://localhost:5000/api`
 
 ### 4. Seed the admin and dummy data
 
