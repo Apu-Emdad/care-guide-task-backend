@@ -7,7 +7,6 @@ import { ErrorMessageInterceptor } from './common/interceptors/error-message.int
 import { validateEnv } from './config/env.js';
 import { HealthController } from './health/health.controller.js';
 import { MongoModule } from './infra/mongo/mongo.module.js';
-import { PrismaModule } from './infra/prisma/prisma.module.js';
 import { AuthGuard } from './common/guards/auth.guard.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { TokenModule } from './infra/token/token.module.js';
@@ -25,7 +24,6 @@ import { UsersModule } from './modules/users/users.module.js';
     }),
     MongoModule,
     TokenModule,
-    PrismaModule,
     ErrorLoggerModule,
     AuthModule,
     UsersModule,

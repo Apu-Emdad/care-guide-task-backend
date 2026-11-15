@@ -1,5 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
+import {
+  INTEREST,
+  type InterestName,
+} from '../../../common/constants/interests.js';
 
 export const USER_ROLES = ['USER', 'ADMIN'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -21,8 +25,8 @@ export class User {
   @Prop({ required: true, enum: USER_ROLES, default: 'USER' })
   role: UserRole;
 
-  @Prop({ type: [String], default: [] })
-  interests: string[];
+  @Prop({ type: [String], enum: Object.values(INTEREST), default: [] })
+  interests: InterestName[];
 
   createdAt: Date;
 

@@ -13,17 +13,17 @@ erDiagram
 
 ### `users`
 
-| Field          | Type       | Notes                                               |
-| -------------- | ---------- | --------------------------------------------------- |
-| `_id`          | `ObjectId` | Primary key                                         |
-| `userName`     | `string`   | Required, lower case, unique                        |
-| `fullName`     | `string`   | Required                                            |
-| `email`        | `string`   | Required, lower case, unique                        |
-| `passwordHash` | `string`   | Required, argon2 hash. Hidden from queries          |
-| `role`         | `string`   | `USER` (default) or `ADMIN`                         |
-| `interests`    | `string[]` | Default empty. Grouped by the interests aggregation |
-| `createdAt`    | `Date`     | Set by Mongoose                                     |
-| `updatedAt`    | `Date`     | Set by Mongoose                                     |
+| Field          | Type       | Notes                                                                                                   |
+| -------------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| `_id`          | `ObjectId` | Primary key                                                                                             |
+| `userName`     | `string`   | Required, lower case, unique                                                                            |
+| `fullName`     | `string`   | Required                                                                                                |
+| `email`        | `string`   | Required, lower case, unique                                                                            |
+| `passwordHash` | `string`   | Required, argon2 hash. Hidden from queries                                                              |
+| `role`         | `string`   | `USER` (default) or `ADMIN`                                                                             |
+| `interests`    | `string[]` | Default empty. Each one of MUSIC, TRAVEL, SPORTS, READING, MOVIES. Grouped by the interests aggregation |
+| `createdAt`    | `Date`     | Set by Mongoose                                                                                         |
+| `updatedAt`    | `Date`     | Set by Mongoose                                                                                         |
 
 ### `refresh_tokens`
 
