@@ -116,3 +116,18 @@ export class UsersQueryDto {
   @IsInt({ message: 'Page size must be a whole number' })
   pageSize: number = 10;
 }
+
+/** Query params of the users-by-interest view: one page of users inside each interest. */
+export class UsersByInterestQueryDto {
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Page must be a whole number' })
+  page: number = 1;
+
+  @ApiPropertyOptional({ default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Page size must be a whole number' })
+  pageSize: number = 10;
+}
