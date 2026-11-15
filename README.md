@@ -49,7 +49,7 @@ yarn start:dev
 ```
 
 > [!IMPORTANT]
-> **Open Swagger to try the API:** http://localhost:5000/api/docs
+> **Open Swagger to try the API:** `http://localhost:5000/api/docs`
 >
 > API base URL: `http://localhost:5000/api`
 
