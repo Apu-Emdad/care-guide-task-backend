@@ -154,12 +154,6 @@ A note of another user returns 404, the same as a note that does not exist.
 | ------ | --------- | ------ | --------------------------------------------- |
 | GET    | `/health` | Public | 200 when MongoDB answers, 503 when it doesn't |
 
-## Aggregations
-
-**Aggregation 1, users grouped by interest** (`GET /api/users/interests`): one `users.aggregate()` call. It runs `$unwind` on `interests`, then `$group` by interest. Each group has its user count and one page of its users, newest first. The most popular interests come first. Interests are a fixed list: `MUSIC`, `TRAVEL`, `SPORTS`, `READING`, `MOVIES`.
-
-**Aggregation 2, a user's posts** (`GET /api/posts/user/:userId`): one `users.aggregate()` pipeline. It finds the user with `$match`, then joins their posts with `$lookup` (`_id` → `posts.author`). Inside the lookup, `$sort` and `$facet` return one page of posts and the total count. The response is `{ user, total, posts }`.
-
 ## Indexes
 
 Only indexes that a query needs exist. Each one was checked with `explain()`.
