@@ -5,15 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, type QueryFilter } from 'mongoose';
+import { Model, Types, type QueryFilter } from 'mongoose';
 import type { Result } from '../../common/interfaces/result.interface.js';
 import type { User } from '../../common/types/auth.types.js';
 import { escapeRegex } from '../../common/utils/escape-regex.util.js';
 import { Post } from '../../infra/mongo/schemas/post.schema.js';
+import { User as UserModel } from '../../infra/mongo/schemas/user.schema.js';
 import type {
   CreatePostDto,
   PostsQueryDto,
   UpdatePostDto,
+  UserPostsQueryDto,
 } from './posts.dto.js';
 
 // Author fields shown with a post
@@ -27,7 +29,10 @@ const AUTHOR_FIELDS = 'userName fullName';
  */
 @Injectable()
 export class PostsService {
-  constructor(@InjectModel(Post.name) private readonly posts: Model<Post>) {}
+  constructor(
+    @InjectModel(Post.name) private readonly posts: Model<Post>,
+    @InjectModel(UserModel.name) private readonly users: Model<UserModel>,
+  ) {}
 
   async create(issuer: User, dto: CreatePostDto): Promise<Result> {
     const post = await this.posts.create({
@@ -69,6 +74,68 @@ export class PostsService {
       status: HttpStatus.OK,
       message: 'Posts fetched successfully',
       data: { posts, total },
+    };
+  }
+
+  /**
+   * One user's posts, newest first, in one aggregation pipeline with a $lookup.
+   *
+   * The pipeline starts from the user and joins their posts on `posts.author`. The
+   * `{ author, _id }` index on posts serves that join and the newest-first sort. $facet
+   * returns one page of posts and the total count from the same pipeline.
+   */
+  async getUserPosts(
+    userId: string,
+    query: UserPostsQueryDto,
+  ): Promise<Result> {
+    const [result] = await this.users.aggregate<{
+      user: { _id: Types.ObjectId; userName: string; fullName: string };
+      posts: Post[];
+      total: number;
+    }>([
+      // 1. the user (default _id index). aggregate() does not cast, so the id must be an ObjectId
+      { $match: { _id: new Types.ObjectId(userId) } },
+      // 2. joining their posts: newest first, then one page and the total
+      {
+        $lookup: {
+          from: 'posts',
+          localField: '_id',
+          foreignField: 'author',
+          pipeline: [
+            { $sort: { _id: -1 } },
+            {
+              $facet: {
+                posts: [
+                  { $skip: (query.page - 1) * query.pageSize },
+                  { $limit: query.pageSize },
+                  { $project: { author: 0 } },
+                ],
+                total: [{ $count: 'count' }],
+              },
+            },
+          ],
+          as: 'page',
+        },
+      },
+      // 3. $facet always gives one document, so this keeps the user
+      { $unwind: '$page' },
+      // 4. the response shape
+      {
+        $project: {
+          _id: 0,
+          user: { _id: '$_id', userName: '$userName', fullName: '$fullName' },
+          posts: '$page.posts',
+          total: { $ifNull: [{ $first: '$page.total.count' }, 0] },
+        },
+      },
+    ]);
+
+    if (!result) throw new NotFoundException('User not found');
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Posts fetched successfully',
+      data: result,
     };
   }
 
