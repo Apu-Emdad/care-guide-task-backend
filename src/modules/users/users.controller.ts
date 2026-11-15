@@ -9,7 +9,7 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ROLE } from '../../common/constants/roles.js';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
@@ -32,18 +32,27 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a user', description: 'Role: Admin' })
   async createUser(@Body() dto: CreateUserDto, @Res() res: Response) {
     const result = await this.usersService.createUser(dto);
     res.status(result.status).json(result);
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'List users, with search and role filter',
+    description: 'Role: Admin',
+  })
   async getUsers(@Query() query: UsersQueryDto, @Res() res: Response) {
     const result = await this.usersService.getUsers(query);
     res.status(result.status).json(result);
   }
 
   @Get('interests')
+  @ApiOperation({
+    summary: 'Users grouped by interest (single aggregation)',
+    description: 'Role: Admin',
+  })
   async getUsersByInterest(
     @Query() query: UsersByInterestQueryDto,
     @Res() res: Response,
@@ -53,6 +62,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a user', description: 'Role: Admin' })
   async getUser(
     @Param('id', ParseObjectIdPipe) id: string,
     @Res() res: Response,
@@ -62,6 +72,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a user', description: 'Role: Admin' })
   async updateUser(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: UpdateUserDto,
@@ -73,6 +84,10 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete a user with their notes, posts and sessions',
+    description: 'Role: Admin',
+  })
   async deleteUser(
     @Param('id', ParseObjectIdPipe) id: string,
     @Issuer() issuer: User,

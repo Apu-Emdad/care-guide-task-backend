@@ -1,6 +1,11 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApiBearerAuth, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
@@ -24,6 +29,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @ApiOperation({ summary: 'Register a new user', description: 'Role: Public' })
   async register(@Body() dto: RegisterDto, @Res() res: Response) {
     const { result, refreshToken, refreshExpiresIn } =
       await this.authService.register(dto);
@@ -33,6 +39,10 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @ApiOperation({
+    summary: 'Log in with user name or email',
+    description: 'Role: Public',
+  })
   async login(@Body() dto: LoginDto, @Res() res: Response) {
     const { result, refreshToken, refreshExpiresIn } =
       await this.authService.login(dto);
@@ -42,6 +52,10 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
+  @ApiOperation({
+    summary: 'Get new tokens with the refresh cookie',
+    description: 'Role: Public',
+  })
   @ApiCookieAuth(REFRESH_COOKIE)
   async refresh(@Req() req: Request, @Res() res: Response) {
     const { result, refreshToken, refreshExpiresIn } =
@@ -52,6 +66,10 @@ export class AuthController {
 
   @Public()
   @Post('logout')
+  @ApiOperation({
+    summary: 'Log out and end this session',
+    description: 'Role: Public',
+  })
   @ApiCookieAuth(REFRESH_COOKIE)
   async logout(@Req() req: Request, @Res() res: Response) {
     const result = await this.authService.logout(req.cookies[REFRESH_COOKIE]);
@@ -60,6 +78,10 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiOperation({
+    summary: 'Get the logged-in user',
+    description: 'Role: Logged in',
+  })
   @ApiBearerAuth()
   async me(@Issuer() issuer: User, @Res() res: Response) {
     const result = await this.authService.me(issuer.id);

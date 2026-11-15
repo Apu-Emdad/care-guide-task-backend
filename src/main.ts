@@ -17,8 +17,10 @@ async function bootstrap() {
   configureApp(app);
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('NestJS Starter API')
-    .setDescription('Auth, users and roles, ready to build on.')
+    .setTitle('Care Guide Task API')
+    .setDescription(
+      'Secure notes API: auth, notes, posts, users and two MongoDB aggregations.',
+    )
     .setVersion('0.0.1')
     .addBearerAuth()
     .addCookieAuth(REFRESH_COOKIE, { type: 'apiKey' }, REFRESH_COOKIE)
@@ -26,7 +28,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup(DOCS_PATH, app, document, {
     jsonDocumentUrl: `${DOCS_PATH}-json`,
-    swaggerOptions: { persistAuthorization: true },
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+    },
     customCss: SWAGGER_CUSTOM_CSS,
     customJsStr: SWAGGER_CUSTOM_JS,
   });

@@ -2,6 +2,7 @@
  * Injected into the Swagger UI page through SwaggerModule.setup options.
  * Adds a fixed left sidebar listing every tag, with pinning saved in localStorage,
  * and authorizes Swagger automatically after a register, login or refresh call.
+ * When the access token expires, it refreshes it and sends the request again.
  */
 
 export const SWAGGER_CUSTOM_CSS = `
@@ -142,6 +143,33 @@ export const SWAGGER_CUSTOM_JS = `
     authorize(getStoredToken());
 
     const originalFetch = window.fetch;
+
+    /**
+     * Auto refresh: when a request gets 401, call /auth/refresh once with the refresh
+     * cookie, then send the request again with the new token. Requests that fail at the
+     * same time share one refresh call, because a second call with the old cookie counts
+     * as token reuse and ends every session.
+     */
+    const REFRESH_URL = location.pathname.replace(/\\/docs.*$/, '') + '/auth/refresh';
+    let refreshing = null;
+    const refreshToken = () => {
+      if (!refreshing) {
+        refreshing = originalFetch(REFRESH_URL, { method: 'POST', credentials: 'include' })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((body) => {
+            const token = body?.data?.accessToken || null;
+            if (token) {
+              setStoredToken(token);
+              authorize(token);
+            }
+            return token;
+          })
+          .catch(() => null)
+          .finally(() => { refreshing = null; });
+      }
+      return refreshing;
+    };
+
     window.fetch = async (...args) => {
       const res = await originalFetch(...args);
       const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
@@ -151,6 +179,16 @@ export const SWAGGER_CUSTOM_JS = `
         if (token) {
           setStoredToken(token);
           authorize(token);
+        }
+      }
+
+      const isAuthCall = /\\/auth\\/(login|register|refresh|logout)$/.test(url);
+      if (res.status === 401 && !isAuthCall && typeof args[0] === 'string') {
+        const token = await refreshToken();
+        if (token) {
+          const init = args[1] || {};
+          const headers = { ...(init.headers || {}), Authorization: 'Bearer ' + token };
+          return originalFetch(args[0], { ...init, headers });
         }
       }
       return res;

@@ -32,7 +32,9 @@ export class RolesGuard implements CanActivate {
     if (!user) throw new UnauthorizedException('Missing access token');
     // The user's role is not one of the allowed roles
     if (!roles.includes(user.role)) {
-      throw new ForbiddenException('Insufficient role');
+      throw new ForbiddenException(
+        'You are not authorized to perform this action',
+      );
     }
     return true;
   }

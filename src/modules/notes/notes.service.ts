@@ -60,7 +60,7 @@ export class NotesService {
     return {
       status: HttpStatus.OK,
       message: 'Notes fetched successfully',
-      data: { notes, total },
+      data: { total, notes },
     };
   }
 
@@ -93,7 +93,7 @@ export class NotesService {
     return {
       status: HttpStatus.OK,
       message: 'Notes fetched successfully',
-      data: { notes, total },
+      data: { total, notes },
     };
   }
 

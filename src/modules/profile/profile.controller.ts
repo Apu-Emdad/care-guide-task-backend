@@ -1,6 +1,6 @@
 import { Body, Controller, Patch, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import type { Env } from '../../config/env.js';
@@ -19,6 +19,10 @@ export class ProfileController {
   ) {}
 
   @Patch()
+  @ApiOperation({
+    summary: 'Update my user name, full name or email',
+    description: 'Role: Logged in',
+  })
   async updateProfile(
     @Issuer() issuer: User,
     @Body() dto: UpdateProfileDto,
@@ -29,6 +33,10 @@ export class ProfileController {
   }
 
   @Patch('password')
+  @ApiOperation({
+    summary: 'Change my password and log out other sessions',
+    description: 'Role: Logged in',
+  })
   async changePassword(
     @Issuer() issuer: User,
     @Body() dto: ChangePasswordDto,

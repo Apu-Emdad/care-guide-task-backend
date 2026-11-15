@@ -73,7 +73,7 @@ export class PostsService {
     return {
       status: HttpStatus.OK,
       message: 'Posts fetched successfully',
-      data: { posts, total },
+      data: { total, posts },
     };
   }
 
@@ -90,8 +90,8 @@ export class PostsService {
   ): Promise<Result> {
     const [result] = await this.users.aggregate<{
       user: { _id: Types.ObjectId; userName: string; fullName: string };
-      posts: Post[];
       total: number;
+      posts: Post[];
     }>([
       // 1. the user (default _id index). aggregate() does not cast, so the id must be an ObjectId
       { $match: { _id: new Types.ObjectId(userId) } },
@@ -105,12 +105,12 @@ export class PostsService {
             { $sort: { _id: -1 } },
             {
               $facet: {
+                total: [{ $count: 'count' }],
                 posts: [
                   { $skip: (query.page - 1) * query.pageSize },
                   { $limit: query.pageSize },
                   { $project: { author: 0 } },
                 ],
-                total: [{ $count: 'count' }],
               },
             },
           ],
@@ -124,8 +124,8 @@ export class PostsService {
         $project: {
           _id: 0,
           user: { _id: '$_id', userName: '$userName', fullName: '$fullName' },
-          posts: '$page.posts',
           total: { $ifNull: [{ $first: '$page.total.count' }, 0] },
+          posts: '$page.posts',
         },
       },
     ]);
