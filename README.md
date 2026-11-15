@@ -91,7 +91,8 @@ CI runs lint, typecheck and build on every push to `main` and every pull request
 - If an old refresh token is used again, every session of that user is ended.
 - The role is read from the database on every request, so a role change works at once.
 
-In Swagger, a successful register, login or refresh fills in the token for you.
+> [!TIP]
+> **No need to copy tokens in Swagger.** After you register or log in, Swagger fills in the access token for you. When it expires, Swagger refreshes it and sends your request again.
 
 ## Endpoints
 
