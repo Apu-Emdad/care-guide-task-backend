@@ -1,6 +1,6 @@
 import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import type { Connection } from 'mongoose';
 import { Public } from '../common/decorators/public.decorator.js';
@@ -14,6 +14,10 @@ export class HealthController {
 
   /** Answers 200 when MongoDB replies to a ping, and 503 when it does not. */
   @Get()
+  @ApiOperation({
+    summary: 'Check the API and the database',
+    description: 'Role: Public',
+  })
   async check(@Res() res: Response) {
     const databaseUp = await this.pingDatabase();
     const result: Result = databaseUp

@@ -9,7 +9,7 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe.js';
@@ -29,6 +29,7 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a post', description: 'Role: Logged in' })
   async createPost(
     @Issuer() issuer: User,
     @Body() dto: CreatePostDto,
@@ -39,12 +40,20 @@ export class PostsController {
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'List all posts, with search',
+    description: 'Role: Logged in',
+  })
   async getPosts(@Query() query: PostsQueryDto, @Res() res: Response) {
     const result = await this.postsService.getPosts(query);
     res.status(result.status).json(result);
   }
 
   @Get('user/:userId')
+  @ApiOperation({
+    summary: "List one user's posts (single $lookup aggregation)",
+    description: 'Role: Logged in',
+  })
   async getUserPosts(
     @Param('userId', ParseObjectIdPipe) userId: string,
     @Query() query: UserPostsQueryDto,
@@ -55,6 +64,7 @@ export class PostsController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a post', description: 'Role: Logged in' })
   async getPost(
     @Param('id', ParseObjectIdPipe) id: string,
     @Res() res: Response,
@@ -64,6 +74,10 @@ export class PostsController {
   }
 
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Update my post (author only)',
+    description: 'Role: Logged in',
+  })
   async updatePost(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,
@@ -75,6 +89,10 @@ export class PostsController {
   }
 
   @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete my post (author only)',
+    description: 'Role: Logged in',
+  })
   async deletePost(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,

@@ -9,7 +9,7 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ROLE } from '../../common/constants/roles.js';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
@@ -26,6 +26,7 @@ export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a note', description: 'Role: Logged in' })
   async createNote(
     @Issuer() issuer: User,
     @Body() dto: CreateNoteDto,
@@ -36,6 +37,10 @@ export class NotesController {
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'List my notes, with search',
+    description: 'Role: Logged in',
+  })
   async getNotes(
     @Issuer() issuer: User,
     @Query() query: NotesQueryDto,
@@ -46,6 +51,10 @@ export class NotesController {
   }
 
   @Get('all')
+  @ApiOperation({
+    summary: "List every user's notes, with search",
+    description: 'Role: Admin',
+  })
   @Roles(ROLE.ADMIN)
   async getAllNotes(@Query() query: NotesQueryDto, @Res() res: Response) {
     const result = await this.notesService.getAllNotes(query);
@@ -53,6 +62,10 @@ export class NotesController {
   }
 
   @Get(':id')
+  @ApiOperation({
+    summary: 'Get one of my notes',
+    description: 'Role: Logged in',
+  })
   async getNote(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,
@@ -63,6 +76,10 @@ export class NotesController {
   }
 
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Update one of my notes',
+    description: 'Role: Logged in',
+  })
   async updateNote(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,
@@ -74,6 +91,10 @@ export class NotesController {
   }
 
   @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete one of my notes',
+    description: 'Role: Logged in',
+  })
   async deleteNote(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,

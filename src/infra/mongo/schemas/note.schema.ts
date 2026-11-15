@@ -1,15 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types, type HydratedDocument } from 'mongoose';
+import { SchemaTypes, Types, type HydratedDocument } from 'mongoose';
 
 @Schema({ collection: 'notes', timestamps: true, versionKey: false })
 export class Note {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
   author: Types.ObjectId;
 
-  @Prop({ required: true, trim: true, maxlength: 200 })
+  @Prop({ type: String, required: true, trim: true, maxlength: 200 })
   title: string;
 
-  @Prop({ required: true, maxlength: 10000 })
+  @Prop({ type: String, required: true, maxlength: 10000 })
   content: string;
 
   createdAt: Date;

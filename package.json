@@ -1,7 +1,7 @@
 {
   "name": "care-guide-task-backend",
   "version": "0.0.1",
-  "description": "NestJS starter: JWT auth with refresh tokens, roles, Prisma, Redis, Docker and CI",
+  "description": "Secure notes API: NestJS, MongoDB Atlas, JWT with refresh tokens, roles and aggregations",
   "author": "Apu Emdad",
   "private": true,
   "license": "MIT",
@@ -15,8 +15,7 @@
     "start:prod": "node scripts/check-node.mjs && node dist/main",
     "lint": "oxlint --type-aware src/",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx scripts/seed.ts",
-    "docker:deps": "docker compose up postgres redis migrate"
+    "db:seed": "node scripts/check-node.mjs && tsx scripts/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

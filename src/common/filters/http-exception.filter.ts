@@ -50,7 +50,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         typeof bodyMessage === 'string'
           ? bodyMessage
           : Array.isArray(bodyMessage)
-            ? 'Validation failed'
+            ? 'Some fields are invalid'
             : exception.message,
       error:
         typeof body === 'string'

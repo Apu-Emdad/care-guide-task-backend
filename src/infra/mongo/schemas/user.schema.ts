@@ -10,19 +10,19 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 @Schema({ collection: 'users', timestamps: true })
 export class User {
-  @Prop({ required: true, trim: true, lowercase: true })
+  @Prop({ type: String, required: true, trim: true, lowercase: true })
   userName: string;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ type: String, required: true, trim: true })
   fullName: string;
 
-  @Prop({ required: true, trim: true, lowercase: true })
+  @Prop({ type: String, required: true, trim: true, lowercase: true })
   email: string;
 
-  @Prop({ required: true, select: false })
+  @Prop({ type: String, required: true, select: false })
   passwordHash: string;
 
-  @Prop({ required: true, enum: USER_ROLES, default: 'USER' })
+  @Prop({ type: String, required: true, enum: USER_ROLES, default: 'USER' })
   role: UserRole;
 
   @Prop({ type: [String], enum: Object.values(INTEREST), default: [] })

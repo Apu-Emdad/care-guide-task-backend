@@ -93,7 +93,7 @@ export class UsersService {
     return {
       status: HttpStatus.OK,
       message: 'Users fetched successfully',
-      data: { users: users.map(toSafeUser), total },
+      data: { total, users: users.map(toSafeUser) },
     };
   }
 
