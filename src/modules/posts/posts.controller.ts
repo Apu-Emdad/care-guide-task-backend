@@ -14,7 +14,12 @@ import type { Response } from 'express';
 import { Issuer } from '../../common/decorators/issuer.decorator.js';
 import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe.js';
 import type { User } from '../../common/types/auth.types.js';
-import { CreatePostDto, PostsQueryDto, UpdatePostDto } from './posts.dto.js';
+import {
+  CreatePostDto,
+  PostsQueryDto,
+  UpdatePostDto,
+  UserPostsQueryDto,
+} from './posts.dto.js';
 import { PostsService } from './posts.service.js';
 
 @ApiBearerAuth()
@@ -36,6 +41,16 @@ export class PostsController {
   @Get()
   async getPosts(@Query() query: PostsQueryDto, @Res() res: Response) {
     const result = await this.postsService.getPosts(query);
+    res.status(result.status).json(result);
+  }
+
+  @Get('user/:userId')
+  async getUserPosts(
+    @Param('userId', ParseObjectIdPipe) userId: string,
+    @Query() query: UserPostsQueryDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.postsService.getUserPosts(userId, query);
     res.status(result.status).json(result);
   }
 

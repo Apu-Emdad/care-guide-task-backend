@@ -45,3 +45,18 @@ export class PostsQueryDto {
   @IsString({ message: 'Search must be a string' })
   search: string = '';
 }
+
+/** Query params of one user's posts: `?page=1&pageSize=10`. */
+export class UserPostsQueryDto {
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Page must be a whole number' })
+  page: number = 1;
+
+  @ApiPropertyOptional({ default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Page size must be a whole number' })
+  pageSize: number = 10;
+}
