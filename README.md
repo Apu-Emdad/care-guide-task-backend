@@ -62,8 +62,6 @@ This creates:
 - one admin user
 - 20 dummy users with different interests, each with 1 to 3 notes and 1 to 2 posts
 
-Running it again adds nothing. The dummy users, notes and posts are saved in one transaction, so either all of them are saved or none.
-
 | User name | Email               | Password   |
 | --------- | ------------------- | ---------- |
 | `admin`   | `admin@example.com` | `12345678` |
