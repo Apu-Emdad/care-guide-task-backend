@@ -104,6 +104,16 @@ export class UsersQueryDto {
   })
   role?: RoleName;
 
+  @ApiPropertyOptional({ enum: Object.values(INTEREST) })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' ? undefined : value,
+  )
+  @IsIn(Object.values(INTEREST), {
+    message: `Interest must be one of: ${Object.values(INTEREST).join(', ')}`,
+  })
+  interest?: InterestName;
+
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

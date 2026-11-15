@@ -79,6 +79,10 @@ export class UsersService {
       filter.role = query.role;
     }
 
+    if (query.interest) {
+      filter.interests = query.interest;
+    }
+
     // 2. fetching the users, newest first. Sorting by _id uses the default index.
     const [total, users] = await Promise.all([
       this.users.countDocuments(filter),
