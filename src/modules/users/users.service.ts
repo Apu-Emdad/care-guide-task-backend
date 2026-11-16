@@ -101,19 +101,18 @@ export class UsersService {
     };
   }
 
-  /**
-   * Users grouped by interest, in one aggregate call.
-   *
-   * Each interest comes with its total user count and one page of its users, newest
-   * first. Interests with the most users come first. The pipeline has no $match, so it
-   * reads every user and an index on `interests` would not help.
-   */
   async getUsersByInterest(query: UsersByInterestQueryDto): Promise<Result> {
     const skip = (query.page - 1) * query.pageSize;
 
+    const filterInterst = query.interest
+      ? [{ $match: { interests: query.interest } }]
+      : [];
+
     const groups = await this.users.aggregate([
+      ...filterInterst,
       // 1. one document per user and interest
       { $unwind: '$interests' },
+      ...filterInterst,
       // 2. newest users first, so each group lists them in that order
       { $sort: { _id: -1 } },
       // 3. one group per interest, with its users and their count
