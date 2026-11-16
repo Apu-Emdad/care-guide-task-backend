@@ -6,6 +6,10 @@
 > [!TIP]
 > **No need to copy tokens in Swagger.** After you register or log in, Swagger fills in the access token for you. When it expires, Swagger refreshes it and sends your request again.
 
+## Tech
+
+NestJS 12, Mongoose 9, MongoDB Atlas, Node 24, Swagger.
+
 ## Features
 
 - **Auth:** JWT based. The access token lasts 15 minutes and the refresh token lasts 7 days. The refresh token is sent in an httpOnly cookie and changes on every refresh. Passwords are hashed with argon2.
@@ -23,9 +27,13 @@
 - **Pagination:** on every list.
 - **Indexes:** only the ones a query needs.
 
-## Tech
+## Deployment
 
-NestJS 12, Mongoose 9, MongoDB Atlas, Node 24, Yarn 4, Swagger, oxlint, Prettier.
+- **Server:** AWS EC2 `t3.micro`, Ubuntu, in Sydney (`ap-southeast-2`), with an Elastic IP.
+- **Nginx:** reverse proxy that sends `/api/` to the app.
+- **HTTPS:** Let's Encrypt certificate from Certbot, on an `sslip.io` domain that points to the Elastic IP.
+- **Database:** MongoDB Atlas free cluster (M0), also in Sydney, close to the server.
+- **CI/CD:** GitHub Actions. `ci.yml` runs lint, typecheck and build. After CI passes on `main`, `deploy.yml` connects over SSH, pulls the code, builds it, restarts PM2 and checks `/api/health`.
 
 ## Project structure
 
@@ -92,7 +100,7 @@ src/
 | Method | Path               | What it does                                                 |
 | ------ | ------------------ | ------------------------------------------------------------ |
 | POST   | `/users`           | Create a user with a role and interests                      |
-| GET    | `/users`           | List users. `search` and `role` filters                      |
+| GET    | `/users`           | List users. `search`, `role` and `interest` filters          |
 | GET    | `/users/interests` | Users grouped by interest (**Aggregation 1**)                |
 | GET    | `/users/:id`       | Get a user                                                   |
 | PATCH  | `/users/:id`       | Update a user. An admin can't change their own role          |
