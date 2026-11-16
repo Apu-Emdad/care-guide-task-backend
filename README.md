@@ -1,18 +1,108 @@
-# Care Guide Task API
+# Care Guide API
 
-A secure notes API built with NestJS and MongoDB Atlas.
+- **Frontend:** https://care-guide-by-apu-emdad.netlify.app
+- **Swagger docs:** https://16-178-61-240.sslip.io/api/docs
 
-- JWT access tokens and refresh tokens (in an httpOnly cookie), with rotation
-- Passwords hashed with argon2
-- Two roles: `USER` and `ADMIN`
-- Notes (private to their author), posts (public to logged-in users) and admin user management
-- Pagination on every list
-- Two MongoDB aggregations: users grouped by interest, and a user's posts with `$lookup`
-- Only the indexes that a query needs
+> [!TIP]
+> **No need to copy tokens in Swagger.** After you register or log in, Swagger fills in the access token for you. When it expires, Swagger refreshes it and sends your request again.
+
+## Features
+
+- **Auth:** JWT based. The access token lasts 15 minutes and the refresh token lasts 7 days. The refresh token is sent in an httpOnly cookie and changes on every refresh. Passwords are hashed with argon2.
+- **Roles:** two roles, `ADMIN` and `USER`. A `RolesGuard` blocks routes that a role can't use.
+  - **User:**
+    - Create, update, delete and list their own notes
+    - Create posts, and update or delete their own
+    - See everyone's posts, or one user's posts (`$lookup` aggregation)
+    - Update their profile and password
+  - **Admin:**
+    - Everything a user can do
+    - Add, update, delete and list users
+    - See everyone's notes
+    - See users grouped by interest (`$group` aggregation)
+- **Pagination:** on every list.
+- **Indexes:** only the ones a query needs.
 
 ## Tech
 
 NestJS 12, Mongoose 9, MongoDB Atlas, Node 24, Yarn 4, Swagger, oxlint, Prettier.
+
+## Project structure
+
+```
+.github/
+  workflows/
+    ci.yml      lint, typecheck and build on every push to main and every pull request
+    deploy.yml  deploy to EC2 after CI passes on main
+scripts/      seed (admin and dummy data) and Node version check
+src/
+  common/     shared constants, decorators, guards, pipes, filters, interceptors, types and utils
+  config/     environment variable validation
+  health/     health check
+  infra/
+    mongo/    Mongoose schemas and the global Mongo module
+    token/    JWT and refresh token service
+  modules/    auth, profile, notes, posts, users
+  swagger/    Swagger UI helpers
+```
+
+## Endpoints
+
+### Auth
+
+| Method | Path             | What it does                   |
+| ------ | ---------------- | ------------------------------ |
+| POST   | `/auth/register` | Register a new user            |
+| POST   | `/auth/login`    | Log in with user name or email |
+| POST   | `/auth/refresh`  | Get new tokens with the cookie |
+| POST   | `/auth/logout`   | End this session               |
+| GET    | `/auth/me`       | Get the logged-in user         |
+
+### Profile
+
+| Method | Path                | What it does                                 |
+| ------ | ------------------- | -------------------------------------------- |
+| PATCH  | `/profile`          | Update my user name, full name or email      |
+| PATCH  | `/profile/password` | Change my password and end my other sessions |
+
+### Notes
+
+| Method | Path         | What it does                                       |
+| ------ | ------------ | -------------------------------------------------- |
+| POST   | `/notes`     | Create a note                                      |
+| GET    | `/notes`     | List my notes. `search` matches title or content   |
+| GET    | `/notes/all` | List every user's notes with the author. View only |
+| GET    | `/notes/:id` | Get one of my notes                                |
+| PATCH  | `/notes/:id` | Update one of my notes                             |
+| DELETE | `/notes/:id` | Delete one of my notes                             |
+
+### Posts
+
+| Method | Path                  | What it does                                                      |
+| ------ | --------------------- | ----------------------------------------------------------------- |
+| POST   | `/posts`              | Create a post                                                     |
+| GET    | `/posts`              | List all posts with the author. `search` matches title or content |
+| GET    | `/posts/user/:userId` | One user's posts (**Aggregation 2**)                              |
+| GET    | `/posts/:id`          | Get a post                                                        |
+| PATCH  | `/posts/:id`          | Update a post. Author only, 403 for anyone else                   |
+| DELETE | `/posts/:id`          | Delete a post. Author only, 403 for anyone else                   |
+
+### Users
+
+| Method | Path               | What it does                                                 |
+| ------ | ------------------ | ------------------------------------------------------------ |
+| POST   | `/users`           | Create a user with a role and interests                      |
+| GET    | `/users`           | List users. `search` and `role` filters                      |
+| GET    | `/users/interests` | Users grouped by interest (**Aggregation 1**)                |
+| GET    | `/users/:id`       | Get a user                                                   |
+| PATCH  | `/users/:id`       | Update a user. An admin can't change their own role          |
+| DELETE | `/users/:id`       | Delete a user with their notes, posts and sessions. Not self |
+
+### Health
+
+| Method | Path      | What it does                                  |
+| ------ | --------- | --------------------------------------------- |
+| GET    | `/health` | 200 when MongoDB answers, 503 when it doesn't |
 
 ## Setup
 
@@ -32,9 +122,9 @@ cp .env.example .env
 
 Generate each secret with:
 
-```bash
+````bash
 openssl rand -base64 48
-```
+```on
 
 The app checks these on startup and stops with a clear message if one is missing or wrong.
 
@@ -42,7 +132,7 @@ The app checks these on startup and stops with a clear message if one is missing
 
 ```bash
 yarn install
-```
+````
 
 ```bash
 yarn start:dev
@@ -53,22 +143,11 @@ yarn start:dev
 >
 > API base URL: `http://localhost:5000/api`
 
-### 4. Seed the admin and dummy data
+### 4. Seed dummy data
 
 ```bash
 yarn db:seed
 ```
-
-This creates:
-
-- one admin user
-- 20 dummy users with different interests, each with 1 to 3 notes and 1 to 2 posts
-
-| User name | Email               | Password   |
-| --------- | ------------------- | ---------- |
-| `admin`   | `admin@example.com` | `12345678` |
-
-Every dummy user has the password `12345678`, and the email `<userName>@example.com`, for example `rahim_uddin@example.com`.
 
 ## Scripts
 
@@ -83,95 +162,6 @@ Every dummy user has the password `12345678`, and the email `<userName>@example.
 | `yarn typecheck`  | Type check with `tsc`           |
 | `yarn format`     | Format `src/` with Prettier     |
 
-CI runs lint, typecheck and build on every push to `main` and every pull request. There are no automated tests.
-
-## Auth
-
-- `POST /api/auth/register` or `POST /api/auth/login` returns an access token in the body and sets a refresh token in an httpOnly cookie.
-- Send the access token on every other request: `Authorization: Bearer <token>`.
-- When the access token expires, call `POST /api/auth/refresh`. It sends back a new access token and a new refresh cookie. The old refresh token stops working.
-- If an old refresh token is used again, every session of that user is ended.
-- The role is read from the database on every request, so a role change works at once.
-
-> [!TIP]
-> **No need to copy tokens in Swagger.** After you register or log in, Swagger fills in the access token for you. When it expires, Swagger refreshes it and sends your request again.
-
-## Endpoints
-
-### Auth
-
-| Method | Path             | Role      | What it does                   |
-| ------ | ---------------- | --------- | ------------------------------ |
-| POST   | `/auth/register` | Public    | Register a new user            |
-| POST   | `/auth/login`    | Public    | Log in with user name or email |
-| POST   | `/auth/refresh`  | Public    | Get new tokens with the cookie |
-| POST   | `/auth/logout`   | Public    | End this session               |
-| GET    | `/auth/me`       | Logged in | Get the logged-in user         |
-
-### Profile
-
-| Method | Path                | Role      | What it does                                 |
-| ------ | ------------------- | --------- | -------------------------------------------- |
-| PATCH  | `/profile`          | Logged in | Update my user name, full name or email      |
-| PATCH  | `/profile/password` | Logged in | Change my password and end my other sessions |
-
-### Notes
-
-| Method | Path         | Role      | What it does                                       |
-| ------ | ------------ | --------- | -------------------------------------------------- |
-| POST   | `/notes`     | Logged in | Create a note                                      |
-| GET    | `/notes`     | Logged in | List my notes. `search` matches title or content   |
-| GET    | `/notes/all` | Admin     | List every user's notes with the author. View only |
-| GET    | `/notes/:id` | Logged in | Get one of my notes                                |
-| PATCH  | `/notes/:id` | Logged in | Update one of my notes                             |
-| DELETE | `/notes/:id` | Logged in | Delete one of my notes                             |
-
-A note of another user returns 404, the same as a note that does not exist.
-
-### Posts
-
-| Method | Path                  | Role      | What it does                                                      |
-| ------ | --------------------- | --------- | ----------------------------------------------------------------- |
-| POST   | `/posts`              | Logged in | Create a post                                                     |
-| GET    | `/posts`              | Logged in | List all posts with the author. `search` matches title or content |
-| GET    | `/posts/user/:userId` | Logged in | One user's posts (**Aggregation 2**)                              |
-| GET    | `/posts/:id`          | Logged in | Get a post                                                        |
-| PATCH  | `/posts/:id`          | Logged in | Update a post. Author only, 403 for anyone else                   |
-| DELETE | `/posts/:id`          | Logged in | Delete a post. Author only, 403 for anyone else                   |
-
-### Users
-
-| Method | Path               | Role  | What it does                                                 |
-| ------ | ------------------ | ----- | ------------------------------------------------------------ |
-| POST   | `/users`           | Admin | Create a user with a role and interests                      |
-| GET    | `/users`           | Admin | List users. `search` and `role` filters                      |
-| GET    | `/users/interests` | Admin | Users grouped by interest (**Aggregation 1**)                |
-| GET    | `/users/:id`       | Admin | Get a user                                                   |
-| PATCH  | `/users/:id`       | Admin | Update a user. An admin can't change their own role          |
-| DELETE | `/users/:id`       | Admin | Delete a user with their notes, posts and sessions. Not self |
-
-### Health
-
-| Method | Path      | Role   | What it does                                  |
-| ------ | --------- | ------ | --------------------------------------------- |
-| GET    | `/health` | Public | 200 when MongoDB answers, 503 when it doesn't |
-
-## Project structure
-
-```
-src/
-  common/     shared constants, decorators, guards, pipes, filters, interceptors, types and utils
-  config/     environment variable validation
-  health/     health check
-  infra/
-    mongo/    Mongoose schemas and the global Mongo module
-    token/    JWT and refresh token service
-  modules/    auth, profile, notes, posts, users
-  swagger/    Swagger UI helpers
-scripts/      seed (admin and dummy data) and Node version check
-docs/         database schema
-```
-
 ## License
 
-MIT
+[MIT](LICENSE) © Emdadul Haque Apu
