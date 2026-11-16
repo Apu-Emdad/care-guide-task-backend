@@ -5,13 +5,12 @@ export const REFRESH_COOKIE = 'refresh_token';
 
 /**
  * httpOnly: JavaScript can't read it, so XSS can't steal it.
- * secure: HTTPS only in production. sameSite strict: never sent from other sites.
- * path /api/auth: only sent to the auth endpoints, not to every API call.
+ * secure: HTTPS only in production.
  */
 export const refreshCookieOptions = (isProduction: boolean): CookieOptions => ({
   httpOnly: true,
   secure: isProduction,
-  sameSite: 'strict',
+  sameSite: isProduction ? 'none' : 'strict',
   path: `/${API_PREFIX}/auth`,
 });
 
