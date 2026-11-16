@@ -32,27 +32,21 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a user', description: 'Role: Admin' })
+  @ApiOperation({ summary: 'Create a user' })
   async createUser(@Body() dto: CreateUserDto, @Res() res: Response) {
     const result = await this.usersService.createUser(dto);
     res.status(result.status).json(result);
   }
 
   @Get()
-  @ApiOperation({
-    summary: 'List users, with search and role filter',
-    description: 'Role: Admin',
-  })
+  @ApiOperation({ summary: 'List users, with search and role filter' })
   async getUsers(@Query() query: UsersQueryDto, @Res() res: Response) {
     const result = await this.usersService.getUsers(query);
     res.status(result.status).json(result);
   }
 
   @Get('interests')
-  @ApiOperation({
-    summary: 'Users grouped by interest (single aggregation)',
-    description: 'Role: Admin',
-  })
+  @ApiOperation({ summary: 'Users grouped by interest (single aggregation)' })
   async getUsersByInterest(
     @Query() query: UsersByInterestQueryDto,
     @Res() res: Response,
@@ -62,7 +56,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a user', description: 'Role: Admin' })
+  @ApiOperation({ summary: 'Get a user' })
   async getUser(
     @Param('id', ParseObjectIdPipe) id: string,
     @Res() res: Response,
@@ -72,7 +66,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a user', description: 'Role: Admin' })
+  @ApiOperation({ summary: 'Update a user' })
   async updateUser(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: UpdateUserDto,
@@ -86,7 +80,6 @@ export class UsersController {
   @Delete(':id')
   @ApiOperation({
     summary: 'Delete a user with their notes, posts and sessions',
-    description: 'Role: Admin',
   })
   async deleteUser(
     @Param('id', ParseObjectIdPipe) id: string,

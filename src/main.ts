@@ -18,9 +18,6 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Care Guide Task API')
-    .setDescription(
-      'Secure notes API: auth, notes, posts, users and two MongoDB aggregations.',
-    )
     .setVersion('0.0.1')
     .addBearerAuth()
     .addCookieAuth(REFRESH_COOKIE, { type: 'apiKey' }, REFRESH_COOKIE)

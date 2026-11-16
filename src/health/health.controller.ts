@@ -14,10 +14,7 @@ export class HealthController {
 
   /** Answers 200 when MongoDB replies to a ping, and 503 when it does not. */
   @Get()
-  @ApiOperation({
-    summary: 'Check the API and the database',
-    description: 'Role: Public',
-  })
+  @ApiOperation({ summary: 'Check the API and the database' })
   async check(@Res() res: Response) {
     const databaseUp = await this.pingDatabase();
     const result: Result = databaseUp

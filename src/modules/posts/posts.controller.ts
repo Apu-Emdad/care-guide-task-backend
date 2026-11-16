@@ -29,7 +29,7 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a post', description: 'Role: Logged in' })
+  @ApiOperation({ summary: 'Create a post' })
   async createPost(
     @Issuer() issuer: User,
     @Body() dto: CreatePostDto,
@@ -40,10 +40,7 @@ export class PostsController {
   }
 
   @Get()
-  @ApiOperation({
-    summary: 'List all posts, with search',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'List all posts, with search' })
   async getPosts(@Query() query: PostsQueryDto, @Res() res: Response) {
     const result = await this.postsService.getPosts(query);
     res.status(result.status).json(result);
@@ -52,7 +49,6 @@ export class PostsController {
   @Get('user/:userId')
   @ApiOperation({
     summary: "List one user's posts (single $lookup aggregation)",
-    description: 'Role: Logged in',
   })
   async getUserPosts(
     @Param('userId', ParseObjectIdPipe) userId: string,
@@ -64,7 +60,7 @@ export class PostsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a post', description: 'Role: Logged in' })
+  @ApiOperation({ summary: 'Get a post' })
   async getPost(
     @Param('id', ParseObjectIdPipe) id: string,
     @Res() res: Response,
@@ -74,10 +70,7 @@ export class PostsController {
   }
 
   @Patch(':id')
-  @ApiOperation({
-    summary: 'Update my post (author only)',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'Update my post (author only)' })
   async updatePost(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,
@@ -89,10 +82,7 @@ export class PostsController {
   }
 
   @Delete(':id')
-  @ApiOperation({
-    summary: 'Delete my post (author only)',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'Delete my post (author only)' })
   async deletePost(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,

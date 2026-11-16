@@ -26,10 +26,7 @@ import { ROLE, type RoleName } from '../../common/constants/roles.js';
 import { toLowerTrimmed, trimmed } from '../../common/utils/transform.util.js';
 
 export class CreateUserDto {
-  @ApiProperty({
-    example: 'maya_rodriguez',
-    description: '3 to 30 characters: a-z, 0-9, _ and -. Stored lowercase.',
-  })
+  @ApiProperty({ example: 'maya_rodriguez' })
   @Transform(toLowerTrimmed)
   @IsString({ message: 'Username must be a string' })
   @IsNotEmpty({ message: 'Username is required' })
@@ -86,9 +83,7 @@ export class UpdateUserDto extends PartialType(
 ) {}
 
 export class UsersQueryDto {
-  @ApiPropertyOptional({
-    description: 'Search by user name, full name or email',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @Transform(trimmed)
   @IsString({ message: 'Search must be a string' })

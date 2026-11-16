@@ -26,7 +26,7 @@ export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a note', description: 'Role: Logged in' })
+  @ApiOperation({ summary: 'Create a note' })
   async createNote(
     @Issuer() issuer: User,
     @Body() dto: CreateNoteDto,
@@ -37,10 +37,7 @@ export class NotesController {
   }
 
   @Get()
-  @ApiOperation({
-    summary: 'List my notes, with search',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'List my notes, with search' })
   async getNotes(
     @Issuer() issuer: User,
     @Query() query: NotesQueryDto,
@@ -51,10 +48,7 @@ export class NotesController {
   }
 
   @Get('all')
-  @ApiOperation({
-    summary: "List every user's notes, with search",
-    description: 'Role: Admin',
-  })
+  @ApiOperation({ summary: "List every user's notes, with search" })
   @Roles(ROLE.ADMIN)
   async getAllNotes(@Query() query: NotesQueryDto, @Res() res: Response) {
     const result = await this.notesService.getAllNotes(query);
@@ -62,10 +56,7 @@ export class NotesController {
   }
 
   @Get(':id')
-  @ApiOperation({
-    summary: 'Get one of my notes',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'Get one of my notes' })
   async getNote(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,
@@ -76,10 +67,7 @@ export class NotesController {
   }
 
   @Patch(':id')
-  @ApiOperation({
-    summary: 'Update one of my notes',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'Update one of my notes' })
   async updateNote(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,
@@ -91,10 +79,7 @@ export class NotesController {
   }
 
   @Delete(':id')
-  @ApiOperation({
-    summary: 'Delete one of my notes',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'Delete one of my notes' })
   async deleteNote(
     @Issuer() issuer: User,
     @Param('id', ParseObjectIdPipe) id: string,

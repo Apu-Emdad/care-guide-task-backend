@@ -11,10 +11,7 @@ import {
 import { toLowerTrimmed, trimmed } from '../../common/utils/transform.util.js';
 
 export class RegisterDto {
-  @ApiProperty({
-    example: 'maya_rodriguez',
-    description: '3 to 30 characters: a-z, 0-9, _ and -. Stored lowercase.',
-  })
+  @ApiProperty({ example: 'maya_rodriguez' })
   @Transform(toLowerTrimmed)
   @IsString({ message: 'Username must be a string' })
   @IsNotEmpty({ message: 'Username is required' })
@@ -46,11 +43,7 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @ApiProperty({
-    example: 'admin',
-    description:
-      'Username or email. A value containing "@" is treated as an email.',
-  })
+  @ApiProperty({ example: 'admin' })
   @Transform(toLowerTrimmed)
   @IsString({ message: 'Username or email must be a string' })
   @IsNotEmpty({ message: 'Username or email is required' })

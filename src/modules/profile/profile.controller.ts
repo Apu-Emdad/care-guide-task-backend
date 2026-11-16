@@ -19,10 +19,7 @@ export class ProfileController {
   ) {}
 
   @Patch()
-  @ApiOperation({
-    summary: 'Update my user name, full name or email',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'Update my user name, full name or email' })
   async updateProfile(
     @Issuer() issuer: User,
     @Body() dto: UpdateProfileDto,
@@ -33,10 +30,7 @@ export class ProfileController {
   }
 
   @Patch('password')
-  @ApiOperation({
-    summary: 'Change my password and log out other sessions',
-    description: 'Role: Logged in',
-  })
+  @ApiOperation({ summary: 'Change my password and log out other sessions' })
   async changePassword(
     @Issuer() issuer: User,
     @Body() dto: ChangePasswordDto,

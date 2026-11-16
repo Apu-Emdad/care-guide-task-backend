@@ -11,10 +11,7 @@ import {
 import { toLowerTrimmed, trimmed } from '../../common/utils/transform.util.js';
 
 export class UpdateProfileDto {
-  @ApiProperty({
-    example: 'maya_rodriguez',
-    description: '3 to 30 characters: a-z, 0-9, _ and -. Stored lowercase.',
-  })
+  @ApiProperty({ example: 'maya_rodriguez' })
   @Transform(toLowerTrimmed)
   @IsString({ message: 'Username must be a string' })
   @IsNotEmpty({ message: 'Username is required' })
