@@ -39,9 +39,9 @@ export class AuthService {
         passwordHash: await argon2.hash(dto.password),
       });
     } catch (error) {
-      // The unique indexes on email and userName reject a second user with the same value
-      const field = duplicateKeyField(error);
-      if (field) throw new ConflictException(duplicateKeyMessage(field));
+      const isDuplicate = duplicateKeyField(error);
+      if (isDuplicate)
+        throw new ConflictException(duplicateKeyMessage(isDuplicate));
       throw error;
     }
 
@@ -57,14 +57,12 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {
-    // The password hash is hidden by default, so it is asked for here
-    // User names can't contain "@", so a value with "@" is an email.
     const filter = dto.userNameOrEmail.includes('@')
       ? { email: dto.userNameOrEmail }
       : { userName: dto.userNameOrEmail };
+
     const user = await this.users.findOne(filter).select('+passwordHash');
 
-    // Same message for an unknown user and a wrong password, so accounts can't be discovered.
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
       throw new UnauthorizedException('Invalid username, email or password');
     }
@@ -80,7 +78,6 @@ export class AuthService {
     };
   }
 
-  // Uses up the refresh token from the cookie and issues a new pair (rotation).
   async refresh(refreshToken: string | undefined): Promise<AuthResult> {
     const id = await this.tokenService.consume(refreshToken);
 

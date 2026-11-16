@@ -35,7 +35,6 @@ export class ProfileService {
         { returnDocument: 'after' },
       );
     } catch (error) {
-      // The unique indexes reject an email or user name that another user has
       const field = duplicateKeyField(error);
       if (field) throw new ConflictException(duplicateKeyMessage(field));
       throw error;
@@ -53,15 +52,12 @@ export class ProfileService {
   }
 
   /**
-   * Changes the password and ends every session, then logs this one back in with a new pair.
-   * The refresh cookie is only sent to /auth, so this route can't tell which session is the
-   * current one; revoking all and issuing a fresh pair keeps the caller logged in.
+   * Changes the password and ends every session
    */
   async changePassword(
     issuer: User,
     dto: ChangePasswordDto,
   ): Promise<AuthResult> {
-    // 1. checking the current password
     const user = await this.users.findById(issuer.id).select('+passwordHash');
 
     if (!user) {
@@ -72,13 +68,16 @@ export class ProfileService {
       throw new BadRequestException('Current password is incorrect');
     }
 
-    // 2. saving the new password
     user.passwordHash = await argon2.hash(dto.newPassword);
-    await user.save();
 
-    // 3. logging out every session, then issuing a new pair for this one
-    await this.tokenService.revokeAll(user.id);
-    const { tokens, ...refresh } = await this.tokenService.issueTokens(user);
+    // A transaction, so the password never changes while old sessions stay logged in
+    const { tokens, ...refresh } = await this.users.db.transaction(
+      async (session) => {
+        await user.save({ session });
+        await this.tokenService.revokeAll(user.id, session);
+        return this.tokenService.issueTokens(user, session);
+      },
+    );
 
     return {
       ...refresh,

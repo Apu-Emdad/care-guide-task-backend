@@ -54,7 +54,6 @@ export class UsersService {
         data: toSafeUser(user),
       };
     } catch (error) {
-      // The unique indexes reject an email or user name that another user has
       const field = duplicateKeyField(error);
       if (field) throw new ConflictException(duplicateKeyMessage(field));
       throw error;
@@ -62,10 +61,8 @@ export class UsersService {
   }
 
   async getUsers(query: UsersQueryDto): Promise<Result> {
-    // 1. building the filter
     const filter: QueryFilter<UserModel> = {};
 
-    // Case-insensitive match in user name, full name or email
     if (query.search) {
       const search = { $regex: escapeRegex(query.search), $options: 'i' };
       filter.$or = [
@@ -83,7 +80,6 @@ export class UsersService {
       filter.interests = query.interest;
     }
 
-    // 2. fetching the users, newest first. Sorting by _id uses the default index.
     const [total, users] = await Promise.all([
       this.users.countDocuments(filter),
       this.users
@@ -93,7 +89,6 @@ export class UsersService {
         .limit(query.pageSize),
     ]);
 
-    // 3. returning the result
     return {
       status: HttpStatus.OK,
       message: 'Users fetched successfully',
@@ -166,7 +161,7 @@ export class UsersService {
     dto: UpdateUserDto,
     issuer: User,
   ): Promise<Result> {
-    // An admin can't change their own role, so the app never loses its last admin by mistake
+    // an admin can't change their own role
     if (id === issuer.id && dto.role && dto.role !== issuer.role) {
       throw new ForbiddenException('You cannot change your own role');
     }
@@ -198,21 +193,23 @@ export class UsersService {
   }
 
   async deleteUser(id: string, issuer: User): Promise<Result> {
-    // 1. an admin can't delete their own account
     if (id === issuer.id) {
       throw new ForbiddenException('You cannot delete your own account');
     }
 
-    // 2. deleting the user
-    const user = await this.users.findByIdAndDelete(id);
-    if (!user) throw new NotFoundException('User not found');
+    /**
+     * MongoDB has no cascading deletes, so the user's notes, posts and sessions are
+     * deleted here. A transaction deletes all of them or none.
+     */
+    await this.users.db.transaction(async (session) => {
+      const user = await this.users.findByIdAndDelete(id, { session });
+      if (!user) throw new NotFoundException('User not found');
 
-    // 3. deleting their notes and posts, and logging them out everywhere
-    await Promise.all([
-      this.notes.deleteMany({ author: id }),
-      this.posts.deleteMany({ author: id }),
-      this.tokenService.revokeAll(id),
-    ]);
+      // One at a time: a transaction's session can't run operations in parallel
+      await this.notes.deleteMany({ author: id }, { session });
+      await this.posts.deleteMany({ author: id }, { session });
+      await this.tokenService.revokeAll(id, session);
+    });
 
     return { status: HttpStatus.OK, message: 'User deleted successfully' };
   }

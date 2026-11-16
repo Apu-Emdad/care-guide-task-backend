@@ -11,13 +11,6 @@ import type {
   UpdateNoteDto,
 } from './notes.dto.js';
 
-/**
- * Notes of the logged-in user.
- *
- * Every query filters by `author`, so a user can only read, change or delete their own
- * notes. A note that belongs to someone else gives 404, the same as a note that does not
- * exist, so a user can't find out which ids exist.
- */
 @Injectable()
 export class NotesService {
   constructor(@InjectModel(Note.name) private readonly notes: Model<Note>) {}
@@ -37,16 +30,13 @@ export class NotesService {
   }
 
   async getNotes(issuer: User, query: NotesQueryDto): Promise<Result> {
-    // 1. building the filter
     const filter: QueryFilter<Note> = { author: issuer.id };
 
-    // Case-insensitive match in title or content
     if (query.search) {
       const search = { $regex: escapeRegex(query.search), $options: 'i' };
       filter.$or = [{ title: search }, { content: search }];
     }
 
-    // 2. fetching the notes
     const [total, notes] = await Promise.all([
       this.notes.countDocuments(filter),
       this.notes
@@ -56,7 +46,6 @@ export class NotesService {
         .limit(query.pageSize),
     ]);
 
-    // 3. returning the result
     return {
       status: HttpStatus.OK,
       message: 'Notes fetched successfully',
@@ -64,21 +53,14 @@ export class NotesService {
     };
   }
 
-  /**
-   * Admin only: every user's notes, newest first, with the author's user name, full name and email in `author`.
-   * View only; admins can't change or delete other users' notes.
-   */
   async getAllNotes(query: NotesQueryDto): Promise<Result> {
-    // 1. building the filter
     const filter: QueryFilter<Note> = {};
 
-    // Case-insensitive match in title or content
     if (query.search) {
       const search = { $regex: escapeRegex(query.search), $options: 'i' };
       filter.$or = [{ title: search }, { content: search }];
     }
 
-    // 2. fetching the notes. Sorting by _id uses the default index.
     const [total, notes] = await Promise.all([
       this.notes.countDocuments(filter),
       this.notes
@@ -89,7 +71,6 @@ export class NotesService {
         .populate('author', 'userName fullName email'),
     ]);
 
-    // 3. returning the result
     return {
       status: HttpStatus.OK,
       message: 'Notes fetched successfully',

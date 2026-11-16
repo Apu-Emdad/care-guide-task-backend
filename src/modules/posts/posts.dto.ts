@@ -46,7 +46,6 @@ export class PostsQueryDto {
   search: string = '';
 }
 
-/** Query params of one user's posts: `?page=1&pageSize=10`. */
 export class UserPostsQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

@@ -122,7 +122,6 @@ export class UsersQueryDto {
   pageSize: number = 10;
 }
 
-/** Query params of the users-by-interest view: one page of users inside each interest. */
 export class UsersByInterestQueryDto {
   @ApiPropertyOptional({ enum: Object.values(INTEREST) })
   @IsOptional()

@@ -120,19 +120,11 @@ Copy the example file and fill it in:
 cp .env.example .env
 ```
 
-Generate each secret with:
-
-````bash
-openssl rand -base64 48
-```on
-
-The app checks these on startup and stops with a clear message if one is missing or wrong.
-
 ### 3. Install and run
 
 ```bash
 yarn install
-````
+```
 
 ```bash
 yarn start:dev

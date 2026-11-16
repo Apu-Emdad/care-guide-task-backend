@@ -3,7 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, type ClientSession } from 'mongoose';
 import type { Env } from '../../config/env.js';
 import { RefreshToken } from '../mongo/schemas/refresh-token.schema.js';
 import type { UserDocument } from '../mongo/schemas/user.schema.js';
@@ -39,9 +39,9 @@ export class TokenService {
   ) {}
 
   // `tokens` goes in the response data; the refresh token only goes in the cookie.
-  async issueTokens(user: UserDocument) {
+  async issueTokens(user: UserDocument, session?: ClientSession) {
     const payload: JwtPayload = { sub: user.id, role: user.role };
-    const issued = await this.issue(payload);
+    const issued = await this.issue(payload, session);
 
     return {
       refreshToken: issued.refreshToken,
@@ -54,7 +54,10 @@ export class TokenService {
     };
   }
 
-  private async issue(payload: JwtPayload): Promise<TokenPair> {
+  private async issue(
+    payload: JwtPayload,
+    session?: ClientSession,
+  ): Promise<TokenPair> {
     const accessExpiresIn = this.config.get('JWT_ACCESS_EXPIRES_IN', {
       infer: true,
     });
@@ -75,12 +78,12 @@ export class TokenService {
       }),
     ]);
 
-    await this.refreshTokens.create({
+    await new this.refreshTokens({
       _id: jti,
       userId: new Types.ObjectId(payload.sub),
       tokenHash: this.hash(refreshToken),
       expiresAt: new Date(Date.now() + refreshExpiresIn * 1000),
-    });
+    }).save({ session });
 
     return { accessToken, accessExpiresIn, refreshToken, refreshExpiresIn };
   }
@@ -122,10 +125,11 @@ export class TokenService {
   }
 
   // Ends every session of a user (password change, user delete, token reuse).
-  async revokeAll(userId: string): Promise<void> {
-    await this.refreshTokens.deleteMany({
-      userId: new Types.ObjectId(userId),
-    });
+  async revokeAll(userId: string, session?: ClientSession): Promise<void> {
+    await this.refreshTokens.deleteMany(
+      { userId: new Types.ObjectId(userId) },
+      { session },
+    );
   }
 
   private async verify(

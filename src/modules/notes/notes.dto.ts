@@ -24,10 +24,8 @@ export class CreateNoteDto {
   content: string;
 }
 
-/** Same rules as CreateNoteDto, but every field is optional. */
 export class UpdateNoteDto extends PartialType(CreateNoteDto) {}
 
-/** Query params of the notes list: `?page=1&pageSize=10&search=milk`. */
 export class NotesQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
