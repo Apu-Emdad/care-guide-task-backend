@@ -2,11 +2,12 @@
  * Seed script
  *
  * 1. Creates the first admin (user name "admin", email "admin@example.com", password "12345678").
- * 2. Creates 20 dummy users with different interests, and 1 to 3 notes and 1 to 2 posts for
+ * 2. Creates 30 dummy users with different interests, and 1 to 3 notes and 1 to 2 posts for
  *    each. Every dummy user's password is "12345678".
  *
- * Safe to run again: each part does nothing when its data already exists. The dummy users,
- * notes and posts are saved in one transaction, so either all of them are saved or none.
+ * Safe to run again: the admin is skipped when it exists, and only the dummy users that don't
+ * exist yet are added, with their notes and posts. Those are saved in one transaction, so
+ * either all of them are saved or none.
  * Run it with `yarn db:seed`.
  */
 import 'dotenv/config';
@@ -47,6 +48,16 @@ const DUMMY_USERS = [
   ['mim_akter', 'Mim Akter', [READING]],
   ['habib_ullah', 'Habib Ullah', [MUSIC, TRAVEL, READING, SPORTS, MOVIES]],
   ['ruma_begum', 'Ruma Begum', [TRAVEL, SPORTS]],
+  ['ayesha_siddika', 'Ayesha Siddika', [MUSIC, TRAVEL]],
+  ['fahim_reza', 'Fahim Reza', [MUSIC, SPORTS]],
+  ['sumaiya_haque', 'Sumaiya Haque', [MUSIC, READING]],
+  ['naim_islam', 'Naim Islam', [MUSIC, MOVIES, TRAVEL]],
+  ['rumana_parvin', 'Rumana Parvin', [MUSIC, SPORTS]],
+  ['sabbir_hossain', 'Sabbir Hossain', [MUSIC, TRAVEL, SPORTS]],
+  ['jannat_ara', 'Jannat Ara', [MUSIC]],
+  ['mahfuz_alam', 'Mahfuz Alam', [SPORTS, TRAVEL]],
+  ['tania_sultana', 'Tania Sultana', [READING, MOVIES]],
+  ['sajid_karim', 'Sajid Karim', [MOVIES, MUSIC]],
 ] as const;
 
 /** Text for notes (private) and posts (public), picked in turn so each user gets different ones. */
@@ -101,23 +112,33 @@ async function seedDummyData(
   PostModel: Model<Post>,
   passwordHash: string,
 ) {
-  // 1. stopping if any dummy user already exists
+  // 1. keeping only the dummy users whose user name and email are both free
   const userNames = DUMMY_USERS.map(([userName]) => userName);
-  const existing = await UserModel.exists({
-    $or: [
-      { userName: { $in: userNames } },
-      { email: { $in: userNames.map((name) => `${name}@example.com`) } },
-    ],
-  });
-  if (existing) {
-    console.log('Dummy data seed skipped: some dummy users already exist');
+  const existing = await UserModel.find(
+    {
+      $or: [
+        { userName: { $in: userNames } },
+        { email: { $in: userNames.map((name) => `${name}@example.com`) } },
+      ],
+    },
+    { userName: 1, email: 1 },
+  ).lean();
+  const taken = new Set(
+    existing.flatMap((user) => [user.userName, user.email]),
+  );
+  const missing = DUMMY_USERS.map((user, index) => ({ user, index })).filter(
+    ({ user: [userName] }) =>
+      !taken.has(userName) && !taken.has(`${userName}@example.com`),
+  );
+  if (!missing.length) {
+    console.log('Dummy data seed skipped: all dummy users already exist');
     return;
   }
 
   // 2. saving the users, notes and posts in one transaction: all of them or none
   await mongoose.connection.transaction(async (session) => {
     const users = await UserModel.insertMany(
-      DUMMY_USERS.map(([userName, fullName, interests]) => ({
+      missing.map(({ user: [userName, fullName, interests] }) => ({
         userName,
         fullName,
         email: `${userName}@example.com`,
@@ -128,19 +149,21 @@ async function seedDummyData(
       { session },
     );
 
-    // Each user gets 1 to 3 notes and 1 to 2 posts
-    const notes = users.flatMap((user, i) =>
-      Array.from({ length: (i % 3) + 1 }, (_, j) => {
+    // Each user gets 1 to 3 notes and 1 to 2 posts, based on their place in DUMMY_USERS
+    const notes = users.flatMap((user, k) => {
+      const i = missing[k].index;
+      return Array.from({ length: (i % 3) + 1 }, (_, j) => {
         const [title, content] = NOTES[(i + j) % NOTES.length];
         return { author: user._id, title, content };
-      }),
-    );
-    const posts = users.flatMap((user, i) =>
-      Array.from({ length: (i % 2) + 1 }, (_, j) => {
+      });
+    });
+    const posts = users.flatMap((user, k) => {
+      const i = missing[k].index;
+      return Array.from({ length: (i % 2) + 1 }, (_, j) => {
         const [title, content] = POSTS[(i + j * 3) % POSTS.length];
         return { author: user._id, title, content };
-      }),
-    );
+      });
+    });
     await NoteModel.insertMany(notes, { session });
     await PostModel.insertMany(posts, { session });
 
